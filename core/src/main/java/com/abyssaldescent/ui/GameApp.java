@@ -1,5 +1,6 @@
 package com.abyssaldescent.ui;
 
+import com.abyssaldescent.GameStateManager;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -11,6 +12,9 @@ public class GameApp extends ApplicationAdapter {
 
     @Override
     public void create() {
+        GameStateManager gsm = GameStateManager.getInstance();
+        gsm.activateKarin();  
+
         batch = new SpriteBatch();
         image = new Texture("libgdx.png");
     }
