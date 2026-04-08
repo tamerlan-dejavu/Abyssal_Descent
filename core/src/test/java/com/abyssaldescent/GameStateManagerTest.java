@@ -39,11 +39,6 @@ class GameStateManagerTest {
         assertEquals(1, GameStateManager.getInstance().getFloorNumber());
     }
 
-    @Test
-    void initialMultiplayerFlag_isFalse() {
-        assertFalse(GameStateManager.getInstance().isMultiplayer());
-    }
-
     // ── Karin slot (always present) ───────────────────────────────────────────
 
     @Test
@@ -66,7 +61,7 @@ class GameStateManagerTest {
         assertEquals(PlayerStatus.ALIVE, karin.getStatus());
     }
 
-    // ── Rayn slot (co-op only) ────────────────────────────────────────────────
+    // ── Rayn slot (AI companion) ──────────────────────────────────────────────
 
     @Test
     void raynSlot_inactiveByDefault() {
@@ -88,14 +83,6 @@ class GameStateManagerTest {
         assertTrue(rayn.isActive());
         assertEquals(CharacterType.RAYN.getMaxHp(), rayn.getCurrentHp());
         assertEquals(PlayerStatus.ALIVE, rayn.getStatus());
-    }
-
-    @Test
-    void deactivateRayn_clearsActiveFlag() {
-        GameStateManager gsm = GameStateManager.getInstance();
-        gsm.activateRayn();
-        gsm.deactivateRayn();
-        assertFalse(gsm.getRaynSlot().isActive());
     }
 
     // ── getSlot helper ────────────────────────────────────────────────────────
@@ -182,13 +169,12 @@ class GameStateManagerTest {
     }
 
     @Test
-    void resetForNewRun_doesNotResetInactiveRaynSlot() {
+    void resetForNewRun_resetsRaynHpEvenWhenInactive() {
         GameStateManager gsm = GameStateManager.getInstance();
-        gsm.activateKarin();
-        // Rayn slot intentionally left inactive
+        gsm.getRaynSlot().applyDamage(20);
 
         gsm.resetForNewRun();
 
-        assertFalse(gsm.getRaynSlot().isActive());
+        assertEquals(CharacterType.RAYN.getMaxHp(), gsm.getRaynSlot().getCurrentHp());
     }
 }

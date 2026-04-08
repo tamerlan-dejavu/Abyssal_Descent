@@ -23,8 +23,7 @@ public final class GameStateManager {
     private final PlayerSlot karinSlot = new PlayerSlot(CharacterType.KARIN);
     private final PlayerSlot raynSlot  = new PlayerSlot(CharacterType.RAYN);
 
-    private int     floorNumber  = 1;
-    private boolean multiplayer  = false;
+    private int floorNumber = 1;
 
     public PlayerSlot getKarinSlot() { return karinSlot; }
     public PlayerSlot getRaynSlot() { return raynSlot; }
@@ -40,10 +39,6 @@ public final class GameStateManager {
     public void activateRayn() {
         raynSlot.reset();
         raynSlot.setActive(true);
-    }
-
-    public void deactivateRayn() {
-        raynSlot.setActive(false);
     }
 
     public int getFloorNumber() { return floorNumber; }
@@ -62,13 +57,10 @@ public final class GameStateManager {
         EventBus.getInstance().post(new PlayerStatusChangedEvent(character, previous, newStatus));
     }
 
-    public boolean isMultiplayer() { return multiplayer; }
-
-    public void setMultiplayer(boolean multiplayer) { this.multiplayer = multiplayer; }
     public void resetForNewRun() {
         floorNumber = 1;
         karinSlot.reset();
-        if (raynSlot.isActive()) raynSlot.reset();
+        raynSlot.reset();
     }
     static void resetInstance() {
         instance = null;
