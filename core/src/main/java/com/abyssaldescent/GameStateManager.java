@@ -62,6 +62,7 @@ public final class GameStateManager {
         karinSlot.reset();
         raynSlot.reset();
     }
+
     static void resetInstance() {
         instance = null;
     }
