@@ -1,0 +1,2 @@
+Note: C:\FINAKPROJECTASIYATAMER\Abyssal_Descent\core\src\main\java\com\abyssaldescent\event\EventBus.java uses unchecked or unsafe operations.
+Note: Recompile with -Xlint:unchecked for details.

@@ -16,16 +16,17 @@ plugins {
 apply plugin: 'io.github.fourlastor.construo'
 
 
-import io.github.fourlastor.construo.Target
+
 
 sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
 application.mainClass = 'com.abyssaldescent.lwjgl3.Lwjgl3Launcher'
 application.applicationName = appName
 eclipse.project.name = appName + '-lwjgl3'
-java.sourceCompatibility = 8
-java.targetCompatibility = 8
-if (JavaVersion.current().isJava9Compatible()) {
-        compileJava.options.release.set(8)
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(8)
+    options.incremental = true
+    options.compilerArgs.add('-Xlint:-options')
 }
 
 dependencies {
@@ -36,8 +37,7 @@ dependencies {
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-backend-lwjgl3:$graalHelperVersion"
-      implementation "io.github.berstanio:gdx-svmhelper-extension-box2d:$graalHelperVersion"
-
+    implementation "io.github.berstanio:gdx-svmhelper-extension-box2d:$graalHelperVersion"
   }
   // Forces LWJGL3 to use at least $lwjgl3Version, currently 3.4.1, to avoid problems on Java 25 and up.
   constraints{
