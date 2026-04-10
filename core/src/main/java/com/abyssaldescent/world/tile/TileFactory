@@ -1,0 +1,11 @@
+public class TileFactory {
+    private static final Map<TileType, Tile> tileCache = new HashMap<>();
+
+    public static Tile getTile(TileType type) {
+        return tileCache.computeIfAbsent(type, t -> switch (t) {
+            case FLOOR -> new Tile(TileType.FLOOR, true);
+            case WALL -> new Tile(TileType.WALL, false);
+            default -> new Tile(t, false);
+        });
+    }
+}
