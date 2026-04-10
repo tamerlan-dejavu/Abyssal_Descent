@@ -1,0 +1,10 @@
+public class FloorDirector {
+    public Floor constructStandardFloor(DungeonBuilder builder) {
+        return builder
+            .generateRooms(8)
+            .connectCorridors()
+            .placeEnemies(10)
+            .placeAltar() // Алтарь для воскрешения Рэйна [cite: 286]
+            .build();
+    }
+}

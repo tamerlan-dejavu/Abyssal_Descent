@@ -1,0 +1,34 @@
+public class DungeonBuilder {
+    private Floor floor = new Floor();
+    private final TierFactory factory;
+
+    public DungeonBuilder(TierFactory factory) {
+        this.factory = factory;
+    }
+
+    public DungeonBuilder generateRooms(int count) {
+       
+        return this;
+    }
+
+    public DungeonBuilder connectCorridors() {
+        
+        return this;
+    }
+
+    public DungeonBuilder placeEnemies(int count) {
+        for (int i = 0; i < count; i++) {
+            floor.addEnemy(factory.createEnemy());
+        }
+        return this;
+    }
+
+    public DungeonBuilder placeAltar() {
+        floor.setAltarPoint(10, 10); 
+        return this;
+    }
+
+    public Floor build() {
+        return floor;
+    }
+}

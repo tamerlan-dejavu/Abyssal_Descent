@@ -1,0 +1,17 @@
+import com.abyssaldescent.world.tile.Tile;          
+import com.abyssaldescent.core.entity.Enemy;       
+import com.badlogic.gdx.math.Vector2;             
+import java.util.ArrayList;
+import java.util.List;
+
+public class Floor {
+    private Tile[][] map;
+    private List<Enemy> enemies = new ArrayList<>();
+    private Vector2 spawnPoint;
+    private Vector2 altarPoint;
+
+    public void setMap(Tile[][] map) { this.map = map; }
+    public void addEnemy(Enemy enemy) { this.enemies.add(enemy); }
+    public void setSpawnPoint(float x, float y) { this.spawnPoint = new Vector2(x, y); }
+    public void setAltarPoint(float x, float y) { this.altarPoint = new Vector2(x, y); }
+}
