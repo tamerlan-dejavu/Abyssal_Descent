@@ -1,7 +1,7 @@
 package com.abyssaldescent.event;
 
-import com.abyssaldescent.core.entity.CharacterType;
-import com.abyssaldescent.core.entity.PlayerStatus;
+import com.abyssaldescent.entity.CharacterType;
+import com.abyssaldescent.entity.PlayerStatus;
 
 public final class PlayerStatusChangedEvent extends GameEvent {
 

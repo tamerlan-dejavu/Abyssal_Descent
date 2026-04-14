@@ -1,9 +1,5 @@
 package com.abyssaldescent.world;
 
-import com.abyssaldescent.world.tile.Tile;
-import com.abyssaldescent.world.tile.TileFactory;
-import com.abyssaldescent.world.tile.TileType;
-
 /**
  * Represents a single dungeon floor — a 2D grid of {@link Tile} references.
  * Tiles are flyweight objects obtained from {@link TileFactory}, so the grid

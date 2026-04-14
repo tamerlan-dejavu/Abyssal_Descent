@@ -1,9 +1,6 @@
 package com.abyssaldescent.event;
 
-/**
- * Fired when Karin performs a melee attack.
- * The combat system listens for this event to resolve hits against enemies.
- */
+
 public final class PlayerAttackEvent extends GameEvent {
 
     private final float originX;
@@ -12,9 +9,7 @@ public final class PlayerAttackEvent extends GameEvent {
     private final float directionY;
     private final float range;
 
-    public PlayerAttackEvent(float originX, float originY,
-                             float directionX, float directionY,
-                             float range) {
+    public PlayerAttackEvent(float originX, float originY, float directionX, float directionY, float range) {
         this.originX = originX;
         this.originY = originY;
         this.directionX = directionX;

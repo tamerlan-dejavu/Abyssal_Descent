@@ -1,9 +1,0 @@
-public class Tile {
-    private final TileType type;
-    private final boolean isPassable;
-    
-    public Tile(TileType type, boolean isPassable) {
-        this.type = type;
-        this.isPassable = isPassable;
-    }
-}

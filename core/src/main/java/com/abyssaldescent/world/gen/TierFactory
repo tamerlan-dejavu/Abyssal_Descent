@@ -1,6 +1,0 @@
-public interface TierFactory {
-    Tile createFloorTile();
-    Tile createWallTile();
-    Enemy createEnemy(); 
-    Trap createTrap();
-}

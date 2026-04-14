@@ -1,3 +1,0 @@
-public enum TileType {
-    WALL, FLOOR, WATER, LAVA, PIT
-}

@@ -1,7 +1,7 @@
 package com.abyssaldescent;
 
-import com.abyssaldescent.core.entity.CharacterType;
-import com.abyssaldescent.core.entity.PlayerStatus;
+import com.abyssaldescent.entity.CharacterType;
+import com.abyssaldescent.entity.PlayerStatus;
 import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.GamePhaseChangedEvent;
 import org.junit.jupiter.api.BeforeEach;

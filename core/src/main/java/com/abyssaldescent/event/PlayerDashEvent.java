@@ -1,9 +1,5 @@
 package com.abyssaldescent.event;
 
-/**
- * Fired when Karin performs a dash (dodge-roll).
- * Can be used by audio/VFX systems to play the dash effect.
- */
 public final class PlayerDashEvent extends GameEvent {
 
     private final float originX;
