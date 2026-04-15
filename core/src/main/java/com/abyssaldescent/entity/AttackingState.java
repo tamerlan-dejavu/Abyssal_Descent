@@ -4,7 +4,6 @@ import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.PlayerAttackEvent;
 
 public final class AttackingState implements PlayerState {
-
     public static final AttackingState INSTANCE = new AttackingState();
 
     private AttackingState() {}

@@ -6,7 +6,6 @@ public final class MeleeStrategy implements CombatStrategy {
     private static final float COMBO_MULTIPLIER = 1.25f;
     private static final int MAX_COMBO = 3;
     private static final float COMBO_WINDOW = 0.6f;
-
     private int comboCount;
     private float timeSinceLastHit;
 
@@ -29,7 +28,9 @@ public final class MeleeStrategy implements CombatStrategy {
     }
 
     @Override
-    public String getName() { return "Melee"; }
+    public String getName() { 
+        return "Melee"; 
+    }
 
     public void update(float deltaTime) {
         timeSinceLastHit += deltaTime;
@@ -38,5 +39,7 @@ public final class MeleeStrategy implements CombatStrategy {
         }
     }
 
-    public int getComboCount() { return comboCount; }
+    public int getComboCount() { 
+        return comboCount; 
+    }
 }
