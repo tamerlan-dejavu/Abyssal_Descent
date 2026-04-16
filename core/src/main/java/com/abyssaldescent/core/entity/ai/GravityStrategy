@@ -1,0 +1,7 @@
+public class GravityStrategy implements EnemyStrategy {
+
+    @Override
+    public void attack(Enemy enemy, Player player) {
+        CombatManager.getInstance().attack(enemy, player);
+    }
+}
