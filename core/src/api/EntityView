@@ -1,0 +1,32 @@
+package com.abyssaldescent.core.proxy;
+
+public interface EntityView {
+    void draw();
+    void update(float delta);
+}
+
+public class CompanionProxy implements EntityView {
+    private RealCompanion realCompanion;
+    private boolean isGhostMode;
+
+    public CompanionProxy(RealCompanion companion) {
+        this.realCompanion = companion;
+    }
+
+    @Override
+    public void draw() {
+        if (isGhostMode) {
+            // Устанавливаем прозрачность 50% перед отрисовкой
+            renderWithAlpha(0.5f);
+        }
+        realCompanion.draw();
+    }
+
+    @Override
+    public void update(float delta) {
+        // Прокси может блокировать обновление логики, если игра на паузе
+        if (realCompanion.isAlive()) {
+            realCompanion.update(delta);
+        }
+    }
+}
