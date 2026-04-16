@@ -1,7 +1,6 @@
 package com.abyssaldescent.entity;
 
 public final class WalkingState implements PlayerState {
-
     public static final WalkingState INSTANCE = new WalkingState();
 
     private WalkingState() {}

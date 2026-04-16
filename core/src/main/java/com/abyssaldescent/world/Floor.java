@@ -1,17 +1,10 @@
 package com.abyssaldescent.world;
 
-/**
- * Represents a single dungeon floor — a 2D grid of {@link Tile} references.
- * Tiles are flyweight objects obtained from {@link TileFactory}, so the grid
- * stores only references, not full objects per cell.
- */
 public final class Floor {
-
     private final int width;
     private final int height;
     private final int floorNumber;
     private final Tile[][] grid;
-
     private int spawnX;
     private int spawnY;
     private int exitX = -1;
@@ -60,7 +53,6 @@ public final class Floor {
     public int getExitY() { return exitY; }
     public void setExit(int x, int y) { this.exitX = x; this.exitY = y; }
 
-    /** Count tiles of a specific type — useful for tests and debugging. */
     public int countTiles(TileType type) {
         Tile target = TileFactory.getInstance().get(type);
         int count = 0;

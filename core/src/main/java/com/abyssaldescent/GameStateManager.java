@@ -7,7 +7,6 @@ import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.FloorChangedEvent;
 import com.abyssaldescent.event.PlayerStatusChangedEvent;
 
-
 public final class GameStateManager {
     private static GameStateManager instance;
 
