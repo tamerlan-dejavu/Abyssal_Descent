@@ -1,0 +1,28 @@
+public class CombatManager {
+
+    private static CombatManager instance;
+
+    private CombatManager() {}
+
+    public static CombatManager getInstance() {
+        if (instance == null) {
+            instance = new CombatManager();
+        }
+        return instance;
+    }
+
+    public void attack(Enemy attacker, Player target) {
+        int damage = calculateDamage(attacker);
+
+        System.out.println(attacker + " атакует на " + damage);
+
+        target.takeDamage(damage);
+
+        // тут потом можно EventBus добавить
+    }
+
+    private int calculateDamage(Enemy enemy) {
+        // можно усложнить позже
+        return 10;
+    }
+}
