@@ -1,6 +1,7 @@
 package com.abyssaldescent.ui;
 
 import com.abyssaldescent.GameStateManager;
+import com.abyssaldescent.audio.MusicPlayer;
 import com.abyssaldescent.combat.CombatManager;
 import com.abyssaldescent.entity.AttackingState;
 import com.abyssaldescent.entity.Player;
@@ -11,50 +12,72 @@ import com.abyssaldescent.entity.enemy.EnemyFactory;
 import com.abyssaldescent.entity.enemy.EnemyType;
 import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.render.CameraController;
+import com.abyssaldescent.render.EnemySpriteRegistry;
+import com.abyssaldescent.render.SpriteOrientation;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
+import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class GameApp extends ApplicationAdapter {
     private static final float VIEWPORT_HEIGHT = 9f;
     private static final float VIEWPORT_WIDTH = 16f;
     private static final float SPRITE_SIZE = 1f;
     private static final float ENEMY_SIZE = 0.9f;
-    private static final int FLOOR_WIDTH = 50;
-    private static final int FLOOR_HEIGHT = 50;
+    private static final int FLOOR_WIDTH = 25;
+    private static final int FLOOR_HEIGHT = 25;
+
+    // Fraction of ATTACK_DURATION spent in the wind-up frame before the strike frame.
+    private static final float ATTACK_WINDUP_FRACTION = 0.4f;
+
     private SpriteBatch batch;
     private ShapeRenderer shapes;
-    private Texture karinTexture;
+    private Texture karinIdleTexture;
+    private Texture karinAttackWindupTexture;
+    private Texture karinAttackStrikeTexture;
     private Texture floorTexture;
-    private TextureRegion floorRegion;
     private Player player;
     private PlayerInputHandler inputHandler;
     private CameraController cameraController;
     private CombatManager combatManager;
+    private final SpriteOrientation playerOrientation = new SpriteOrientation();
+    private EnemySpriteRegistry enemySprites;
+    private final Map<String, SpriteOrientation> enemyOrientations = new HashMap<>();
+    private final Map<String, Float> enemyLastX = new HashMap<>();
+    private final MusicPlayer musicPlayer = new MusicPlayer();
 
     @Override
     public void create() {
+        // Register ESC immediately so the user can always quit, even if asset loading fails below.
+        Gdx.input.setInputProcessor(new InputAdapter() {
+            @Override public boolean keyDown(int keycode) {
+                if (keycode == Input.Keys.ESCAPE) { Gdx.app.exit(); return true; }
+                return false;
+            }
+        });
+
         GameStateManager gsm = GameStateManager.getInstance();
         gsm.activateKarin();
 
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
 
-        karinTexture = new Texture("karin.png");
-        karinTexture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        karinIdleTexture = loadTextureOrPlaceholder("karin.png", Color.CYAN);
+
+        karinAttackWindupTexture = loadAttackFrame("karin_attack_windup.png");
+        karinAttackStrikeTexture = loadAttackFrame("karin_attack_strike.png");
 
         floorTexture = loadOrGenerateFloorTile();
-        floorTexture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-        floorTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-
-        floorRegion = new TextureRegion(floorTexture);
-        floorRegion.setRegion(0, 0, FLOOR_WIDTH * 16, FLOOR_HEIGHT * 16);
 
         player = new Player(FLOOR_WIDTH / 2f, FLOOR_HEIGHT / 2f);
 
@@ -69,7 +92,51 @@ public class GameApp extends ApplicationAdapter {
 
         combatManager = new CombatManager(EventBus.getInstance(), player.getCombatStrategy());
         combatManager.setPlayerBaseDamage(15);
+        enemySprites = new EnemySpriteRegistry();
+        musicPlayer.start();
         spawnDemoEnemies();
+    }
+
+    private Texture loadTextureOrPlaceholder(String path, Color fallbackColor) {
+        Texture t;
+        if (Gdx.files.internal(path).exists()) {
+            try {
+                t = new Texture(path);
+            } catch (RuntimeException e) {
+                Gdx.app.error("GameApp", "Failed to load " + path + ", using placeholder.", e);
+                t = generateSolidTexture(fallbackColor);
+            }
+        } else {
+            Gdx.app.log("GameApp", "Missing asset: " + path + " — using placeholder.");
+            t = generateSolidTexture(fallbackColor);
+        }
+        t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        return t;
+    }
+
+    private Texture generateSolidTexture(Color color) {
+        Pixmap pixmap = new Pixmap(16, 16, Pixmap.Format.RGBA8888);
+        pixmap.setColor(color);
+        pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private Texture loadAttackFrame(String path) {
+        Texture t;
+        if (Gdx.files.internal(path).exists()) {
+            try {
+                t = new Texture(path);
+            } catch (RuntimeException e) {
+                Gdx.app.error("GameApp", "Failed to load " + path + ", reusing idle frame.", e);
+                return karinIdleTexture;
+            }
+        } else {
+            t = karinIdleTexture;
+        }
+        t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        return t;
     }
 
     private void spawnDemoEnemies() {
@@ -89,11 +156,13 @@ public class GameApp extends ApplicationAdapter {
 
         inputHandler.update();
         player.update(dt);
+        clampPlayerToWorld();
 
         for (Enemy e : combatManager.getEnemies()) {
             e.observeTarget(player.getX(), player.getY(), true);
         }
         combatManager.update(dt);
+        clampEnemiesToWorld();
 
         cameraController.setTarget(player.getX(), player.getY());
         cameraController.update(dt);
@@ -102,26 +171,93 @@ public class GameApp extends ApplicationAdapter {
 
         batch.setProjectionMatrix(cameraController.getCamera().combined);
         batch.begin();
-        batch.draw(floorRegion, 0, 0, FLOOR_WIDTH, FLOOR_HEIGHT);
-        batch.draw(karinTexture,
-            player.getX() - SPRITE_SIZE * 0.5f,
-            player.getY() - SPRITE_SIZE * 0.5f,
-            SPRITE_SIZE, SPRITE_SIZE);
+        drawFloorTiles();
+        drawPlayer();
+        drawEnemySprites();
         batch.end();
 
         shapes.setProjectionMatrix(cameraController.getCamera().combined);
         renderEnemies();
-        renderAttackCone();
+    }
+
+    private void drawFloorTiles() {
+        batch.setColor(Color.WHITE);
+        batch.draw(floorTexture, 0, 0, FLOOR_WIDTH, FLOOR_HEIGHT);
+    }
+
+    private void clampPlayerToWorld() {
+        float half = SPRITE_SIZE * 0.5f;
+        float x = MathUtils.clamp(player.getX(), half, FLOOR_WIDTH - half);
+        float y = MathUtils.clamp(player.getY(), half, FLOOR_HEIGHT - half);
+        player.getContext().setPosition(x, y);
+    }
+
+    private void clampEnemiesToWorld() {
+        float half = ENEMY_SIZE * 0.5f;
+        for (Enemy e : combatManager.getEnemies()) {
+            float x = MathUtils.clamp(e.getX(), half, FLOOR_WIDTH - half);
+            float y = MathUtils.clamp(e.getY(), half, FLOOR_HEIGHT - half);
+            if (x != e.getX() || y != e.getY()) {
+                e.getContext().setPosition(x, y);
+            }
+        }
+    }
+
+    private void drawEnemySprites() {
+        for (Enemy e : combatManager.getEnemies()) {
+            Texture tex = enemySprites.get(e.getType());
+            if (tex == null) continue;
+
+            SpriteOrientation orient = enemyOrientations.computeIfAbsent(
+                    e.getId(), id -> new SpriteOrientation());
+            Float prevX = enemyLastX.get(e.getId());
+            if (prevX != null) orient.update(e.getX() - prevX);
+            enemyLastX.put(e.getId(), e.getX());
+
+            float half = ENEMY_SIZE * 0.5f;
+            batch.draw(tex,
+                    e.getX() - half, e.getY() - half,
+                    ENEMY_SIZE, ENEMY_SIZE,
+                    0, 0,
+                    tex.getWidth(), tex.getHeight(),
+                    orient.isFlipX(), false);
+        }
+    }
+
+    private void drawPlayer() {
+        Texture frame = currentPlayerFrame();
+        PlayerContext ctx = player.getContext();
+        playerOrientation.update(ctx.getFacing());
+
+        float half = SPRITE_SIZE * 0.5f;
+        batch.draw(frame,
+            player.getX() - half, player.getY() - half,
+            SPRITE_SIZE, SPRITE_SIZE,
+            0, 0,
+            frame.getWidth(), frame.getHeight(),
+            playerOrientation.isFlipX(), false);
+    }
+
+    private Texture currentPlayerFrame() {
+        if (player.getCurrentState() != AttackingState.INSTANCE) {
+            return karinIdleTexture;
+        }
+        float t = player.getContext().getStateTimer();
+        float windupEnd = PlayerContext.ATTACK_DURATION * ATTACK_WINDUP_FRACTION;
+        return t < windupEnd ? karinAttackWindupTexture : karinAttackStrikeTexture;
     }
 
     private void renderEnemies() {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         for (Enemy e : combatManager.getEnemies()) {
-            Color body = colorFor(e.getType());
-            if (e.isDead()) body = Color.DARK_GRAY;
-            shapes.setColor(body);
-            shapes.rect(e.getX() - ENEMY_SIZE * 0.5f, e.getY() - ENEMY_SIZE * 0.5f,
-                    ENEMY_SIZE, ENEMY_SIZE);
+            boolean hasSprite = enemySprites.has(e.getType());
+            if (!hasSprite) {
+                Color body = colorFor(e.getType());
+                if (e.isDead()) body = Color.DARK_GRAY;
+                shapes.setColor(body);
+                shapes.rect(e.getX() - ENEMY_SIZE * 0.5f, e.getY() - ENEMY_SIZE * 0.5f,
+                        ENEMY_SIZE, ENEMY_SIZE);
+            }
 
             if (!e.isDead()) {
                 float hpPct = e.getCurrentHp() / (float) e.getType().getMaxHp();
@@ -136,31 +272,6 @@ public class GameApp extends ApplicationAdapter {
             }
         }
         shapes.end();
-    }
-
-    private void renderAttackCone() {
-        if (player.getCurrentState() != AttackingState.INSTANCE) return;
-
-        PlayerContext ctx = player.getContext();
-        float ox = ctx.getPosition().x;
-        float oy = ctx.getPosition().y;
-        float fx = ctx.getFacing().x;
-        float fy = ctx.getFacing().y;
-        float range = PlayerContext.ATTACK_RANGE;
-        float leftX = -fy;
-        float leftY = fx;
-
-        float tip1x = ox + fx * range + leftX * range * 0.5f;
-        float tip1y = oy + fy * range + leftY * range * 0.5f;
-        float tip2x = ox + fx * range - leftX * range * 0.5f;
-        float tip2y = oy + fy * range - leftY * range * 0.5f;
-
-        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(1f, 0.9f, 0.3f, 0.5f);
-        shapes.triangle(ox, oy, tip1x, tip1y, tip2x, tip2y);
-        shapes.end();
-        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
     }
 
     private Color colorFor(EnemyType type) {
@@ -186,16 +297,36 @@ public class GameApp extends ApplicationAdapter {
     public void dispose() {
         batch.dispose();
         shapes.dispose();
-        karinTexture.dispose();
+        karinIdleTexture.dispose();
+        if (karinAttackWindupTexture != karinIdleTexture) karinAttackWindupTexture.dispose();
+        if (karinAttackStrikeTexture != karinIdleTexture) karinAttackStrikeTexture.dispose();
         floorTexture.dispose();
+        if (enemySprites != null) enemySprites.dispose();
+        musicPlayer.dispose();
         if (combatManager != null) combatManager.dispose();
     }
 
     private Texture loadOrGenerateFloorTile() {
         if (Gdx.files.internal("floor_tile.png").exists()) {
-            return new Texture("floor_tile.png");
+            try {
+                // Re-encode through an RGBA8888 Pixmap so 8-bit grayscale PNGs render correctly
+                // (SpriteBatch treats Alpha-only textures as transparent on default blend).
+                Pixmap src = new Pixmap(Gdx.files.internal("floor_tile.png"));
+                Pixmap rgba = new Pixmap(src.getWidth(), src.getHeight(), Pixmap.Format.RGBA8888);
+                rgba.setBlending(Pixmap.Blending.None);
+                rgba.drawPixmap(src, 0, 0);
+                Texture t = new Texture(rgba);
+                t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+                src.dispose();
+                rgba.dispose();
+                return t;
+            } catch (RuntimeException e) {
+                Gdx.app.error("GameApp", "Failed to load floor_tile.png, using placeholder.", e);
+            }
         }
-        return generatePlaceholderTile();
+        Texture placeholder = generatePlaceholderTile();
+        placeholder.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+        return placeholder;
     }
 
     private Texture generatePlaceholderTile() {

@@ -1,11 +1,6 @@
 package com.abyssaldescent.world;
 
-/**
- * Axis-aligned rectangular room inside a dungeon floor.
- * Used during generation by {@link DungeonBuilder}.
- */
 public final class Room {
-
     private final int x;
     private final int y;
     private final int width;

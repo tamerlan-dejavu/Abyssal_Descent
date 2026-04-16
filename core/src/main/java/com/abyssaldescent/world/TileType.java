@@ -1,12 +1,7 @@
 package com.abyssaldescent.world;
 
-/**
- * Flyweight intrinsic state for tiles.
- * Each enum constant is a shared, immutable tile definition reused
- * across thousands of map cells without per-instance allocation.
- */
-public enum TileType {
 
+public enum TileType {
     FLOOR("floor", true, false),
     WALL("wall", false, false),
     CORRIDOR("corridor", true, false),

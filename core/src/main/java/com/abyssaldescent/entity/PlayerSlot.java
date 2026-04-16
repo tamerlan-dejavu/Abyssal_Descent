@@ -1,9 +1,7 @@
 package com.abyssaldescent.entity;
 
 public final class PlayerSlot {
-
     private final CharacterType characterType;
-
     private int currentHp;
     private PlayerStatus status;
     private boolean active;

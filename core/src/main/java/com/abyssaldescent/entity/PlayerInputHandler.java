@@ -11,10 +11,8 @@ import com.badlogic.gdx.math.Vector3;
 
 
 public final class PlayerInputHandler extends InputAdapter {
-
     private final Player player;
     private Camera camera;
-
     private boolean attackPressed;
     private boolean dashPressed;
     private int attackScreenX;
@@ -79,6 +77,10 @@ public final class PlayerInputHandler extends InputAdapter {
     public boolean keyDown(int keycode) {
         if (keycode == Input.Keys.SPACE) {
             dashPressed = true;
+            return true;
+        }
+        if (keycode == Input.Keys.ESCAPE) {
+            Gdx.app.exit();
             return true;
         }
         return false;

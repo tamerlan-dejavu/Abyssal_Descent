@@ -1,11 +1,6 @@
 package com.abyssaldescent.world;
 
-/**
- * Flyweight object representing a single tile definition.
- * Instances are shared via {@link TileFactory} — the intrinsic state
- * (type, walkability, hazard flag) is immutable and identical for all
- * cells of the same kind.
- */
+
 public final class Tile {
 
     private final TileType type;
