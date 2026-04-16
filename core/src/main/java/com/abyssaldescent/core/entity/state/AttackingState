@@ -1,0 +1,10 @@
+public class AttackingState implements EnemyState {
+
+    @Override
+    public void update(Enemy enemy) {
+
+        if (enemy.getTarget() != null) {
+            enemy.getStrategy().attack(enemy, enemy.getTarget());
+        }
+    }
+}

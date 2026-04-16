@@ -1,0 +1,7 @@
+public class DeadState implements EnemyState {
+
+    @Override
+    public void update(Enemy enemy) {
+        System.out.println("Enemy мертв");
+    }
+}

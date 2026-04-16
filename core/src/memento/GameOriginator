@@ -1,0 +1,23 @@
+package com.abyssaldescent.model.memento;
+
+public class GameOriginator {
+    private Vector2 position;
+    private int hp;
+    private int level;
+
+    public void setState(Vector2 pos, int hp, int level) {
+        this.position = pos.cpy();
+        this.hp = hp;
+        this.level = level;
+    }
+
+    public GameStateMemento save() {
+        return new GameStateMemento(position, hp, level, System.currentTimeMillis());
+    }
+
+    public void restore(GameStateMemento memento) {
+        this.position = memento.playerPosition();
+        this.hp = memento.currentHp();
+        this.level = memento.levelNumber();
+    }
+}

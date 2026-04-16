@@ -1,0 +1,7 @@
+package com.abyssaldescent.core.entity.state;
+
+import com.abyssaldescent.core.entity.Enemy;
+
+public interface EnemyState {
+    void update(Enemy enemy, float delta);
+}

@@ -4,19 +4,10 @@ import com.abyssaldescent.world.Floor;
 import com.abyssaldescent.world.tile.TileType;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Builder pattern implementation for procedural dungeon floor generation.
- *
- * <p>Each step adds a layer of content to the floor:
- * {@code generateRooms → connectCorridors → placeSpawn → placeExit → placeDecorations}.
- * The {@link FloorDirector} orchestrates the sequence, but callers can also
- * drive the builder manually for testing or custom layouts.
- *
- * <p><b>Pattern:</b> Builder (GoF creational).
- */
 public final class DungeonBuilder {
 
     private static final int MIN_ROOM_SIZE = 4;
@@ -43,7 +34,7 @@ public final class DungeonBuilder {
         this.floor = new Floor(width, height, floorNumber);
     }
 
-    /** Step 1: carve out rooms. */
+    
     public DungeonBuilder generateRooms(int targetRoomCount) {
         rooms.clear();
         for (int attempt = 0; attempt < MAX_PLACEMENT_ATTEMPTS && rooms.size() < targetRoomCount; attempt++) {
@@ -68,7 +59,7 @@ public final class DungeonBuilder {
         return this;
     }
 
-    /** Step 2: connect rooms with corridors. */
+   
     public DungeonBuilder connectCorridors() {
         for (int i = 0; i < rooms.size() - 1; i++) {
             Room a = rooms.get(i);
@@ -78,7 +69,7 @@ public final class DungeonBuilder {
         return this;
     }
 
-    /** Step 3: place spawn point in the first room. */
+   
     public DungeonBuilder placeSpawn() {
         if (rooms.isEmpty()) return this;
         Room first = rooms.get(0);
@@ -89,7 +80,6 @@ public final class DungeonBuilder {
         return this;
     }
 
-    /** Step 4: place exit in the last room. */
     public DungeonBuilder placeExit() {
         if (rooms.isEmpty()) return this;
         Room last = rooms.get(rooms.size() - 1);
@@ -100,9 +90,8 @@ public final class DungeonBuilder {
         return this;
     }
 
-    /** Step 5: optional decorations (placeholder for future traps/items). */
     public DungeonBuilder placeDecorations() {
-        // Will be expanded in Sprint 2 with traps, items, enemies
+    
         return this;
     }
 
@@ -113,10 +102,8 @@ public final class DungeonBuilder {
 
     /** Expose rooms for testing/inspection. */
     public List<Room> getRooms() {
-        return List.copyOf(rooms);
+        return Collections.unmodifiableList(rooms);
     }
-
-    // ── Private helpers ────────────────────────────────────────────────────
 
     private void carveRoom(Room room) {
         for (int x = room.getX(); x < room.getX() + room.getWidth(); x++) {

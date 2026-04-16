@@ -1,0 +1,102 @@
+package com.abyssaldescent.world.gen;
+
+import com.abyssaldescent.core.entity.Enemy;
+import com.abyssaldescent.core.entity.ai.SwarmStrategy;
+import com.abyssaldescent.core.entity.ai.RangedStrategy;
+
+public class EnemyFactory {
+    
+    public static Enemy createGoblin() {
+        // Создаем врага из ТЗ: Гоблин-Тень, 15 HP, стайная стратегия 
+        return new GenericEnemy("Гоблин-Тень", 15, new SwarmStrategy());
+    }
+
+    public static Enemy createWatcher() {
+        // Создаем врага из ТЗ: Каменный Наблюдатель, 30 HP, дистанционная стратегия 
+        return new GenericEnemy("Каменный Наблюдатель", 30, new RangedStrategy());
+    }
+
+    // Внутренняя реализация конкретного врага
+    private static class GenericEnemy extends Enemy {
+        public GenericEnemy(String name, int hp, com.abyssaldescent.core.entity.ai.EnemyStrategy strategy) {
+            super(name, hp, strategy);
+        }
+    }
+}
+
+public class EnemyFactory {
+
+    public static Enemy createEnemy(String type) {
+
+        switch (type) {
+
+            // 🟢 ЯРУС 1
+            case "GOBLIN":
+                return new Enemy(15, new SwarmStrategy());
+
+            case "RAT":
+                return new Enemy(10, new SwarmStrategy());
+
+            case "MOSS":
+                return new Enemy(25, new HeavyStrategy());
+
+            case "WATCHER":
+                return new Enemy(30, new RangedStrategy());
+
+            // 🔵 ЯРУС 2
+            case "ARCHER":
+                return new Enemy(20, new RangedStrategy());
+
+            case "DROWNED":
+                return new Enemy(30, new HeavyStrategy());
+
+            case "MEDUSA":
+                return new Enemy(12, new RangedStrategy());
+
+            case "CRAB":
+                return new Enemy(8, new SwarmStrategy());
+
+            // 🟠 ЯРУС 3
+            case "GOLEM":
+                return new Enemy(120, new HeavyStrategy());
+
+            case "ELEMENTAL":
+                return new Enemy(40, new HeavyStrategy());
+
+            case "AUTOMATON":
+                return new Enemy(35, new RangedStrategy());
+
+            case "SNAKE":
+                return new Enemy(20, new StealthStrategy());
+
+            // 🟣 ЯРУС 4
+            case "SHADOW":
+                return new Enemy(18, new StealthStrategy());
+
+            case "GUARDIAN":
+                return new Enemy(45, new HeavyStrategy());
+
+            case "INK":
+                return new Enemy(10, new SwarmStrategy());
+
+            case "WHISPER":
+                return new Enemy(50, new GravityStrategy());
+
+            // 🔴 ЯРУС 5
+            case "KNIGHT":
+                return new Enemy(70, new HeavyStrategy());
+
+            case "EYE":
+                return new Enemy(25, new RangedStrategy());
+
+            case "PARASITE":
+                return new Enemy(30, new GravityStrategy());
+
+            case "CLONE":
+                return new Enemy(100, new StealthStrategy());
+
+            default:
+                throw new IllegalArgumentException("Unknown enemy type: " + type);
+        }
+    }
+}

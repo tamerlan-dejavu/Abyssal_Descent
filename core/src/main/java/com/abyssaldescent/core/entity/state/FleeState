@@ -1,0 +1,11 @@
+public class FleeState implements EnemyState {
+
+    @Override
+    public void update(Enemy enemy) {
+        System.out.println("Enemy убегает");
+
+        if (enemy.getHp() > 10) {
+            enemy.setState(new ChaseState());
+        }
+    }
+}

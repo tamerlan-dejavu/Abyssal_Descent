@@ -1,0 +1,11 @@
+public class ChaseState implements EnemyState {
+
+    @Override
+    public void update(Enemy enemy) {
+        System.out.println("Enemy преследует игрока");
+
+        if (enemy.getTarget() != null) {
+            enemy.setState(new AttackingState());
+        }
+    }
+}
