@@ -1,7 +1,6 @@
 package com.abyssaldescent.entity.enemy;
 
 import com.abyssaldescent.entity.enemy.ai.EnemyStrategy;
-import com.abyssaldescent.entity.enemy.ai.GravityStrategy;
 import com.abyssaldescent.entity.enemy.ai.HeavyStrategy;
 import com.abyssaldescent.entity.enemy.ai.RangedStrategy;
 import com.abyssaldescent.entity.enemy.ai.StealthStrategy;
@@ -24,9 +23,7 @@ public final class EnemyFactory {
             case RANGED:  return new RangedStrategy();
             case HEAVY:   return new HeavyStrategy();
             case STEALTH: return new StealthStrategy();
-            case GRAVITY: return new GravityStrategy();
-            default:
-                throw new IllegalArgumentException("Unknown AI kind: " + type.getAiKind());
+            default: throw new IllegalArgumentException("Unknown AI kind: " + type.getAiKind());
         }
     }
 }

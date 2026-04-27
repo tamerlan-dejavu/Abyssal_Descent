@@ -1,7 +1,10 @@
 package com.abyssaldescent.combat;
 
-import com.abyssaldescent.entity.CharacterType;
+import com.abyssaldescent.combat.chips.ChipDecorator;
+import com.abyssaldescent.combat.chips.DoubleJumpChip;
+import com.abyssaldescent.combat.strategy.CombatStrategy;
 import com.abyssaldescent.entity.enemy.Enemy;
+import com.abyssaldescent.entity.player.CharacterType;
 import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.EventListener;
 import com.abyssaldescent.event.PlayerAttackEvent;
@@ -50,8 +53,7 @@ public final class CombatManager {
         float dy = event.getDirectionY();
         float range = Math.max(event.getRange(), playerStrategy.getRange());
 
-        boolean pierce = playerStrategy instanceof PierceEnchantment
-                || unwrapContainsPierce(playerStrategy);
+        boolean pierce = playerStrategy instanceof DoubleJumpChip || unwrapContainsPierce(playerStrategy);
 
         for (Enemy enemy : enemies) {
             if (enemy.isDead()) continue;
@@ -81,9 +83,9 @@ public final class CombatManager {
 
     private static boolean unwrapContainsPierce(CombatStrategy strategy) {
         CombatStrategy current = strategy;
-        while (current instanceof WeaponDecorator) {
-            if (current instanceof PierceEnchantment) return true;
-            current = ((WeaponDecorator) current).unwrap();
+        while (current instanceof ChipDecorator) {
+            if (current instanceof DoubleJumpChip) return true;
+            current = ((ChipDecorator) current).unwrap();
         }
         return false;
     }

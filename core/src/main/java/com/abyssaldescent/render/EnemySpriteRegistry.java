@@ -24,7 +24,6 @@ public final class EnemySpriteRegistry {
     }
 
     public Texture get(EnemyType type) { return textures.get(type); }
-
     public boolean has(EnemyType type) { return textures.containsKey(type); }
 
     public void dispose() {

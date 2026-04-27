@@ -1,10 +1,9 @@
 package com.abyssaldescent.command;
 
-import com.abyssaldescent.entity.PlayerContext;
+import com.abyssaldescent.entity.player.PlayerContext;
 
 
 public final class MoveCommand implements Command {
-
     private final float dirX;
     private final float dirY;
 

@@ -6,16 +6,11 @@ import com.badlogic.gdx.math.Vector2;
 
 
 public final class CameraController {
-
     private static final float DEFAULT_LERP_FACTOR = 5f;
-
     private final OrthographicCamera camera;
     private final Vector2 target = new Vector2();
-
     private float lerpFactor = DEFAULT_LERP_FACTOR;
-
     private final float baseViewportHeight;
-
     private float worldWidth;
     private float worldHeight;
     private boolean hasBounds;

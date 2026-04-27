@@ -2,7 +2,6 @@ package com.abyssaldescent.event;
 
 
 public final class PlayerAttackEvent extends GameEvent {
-
     private final float originX;
     private final float originY;
     private final float directionX;

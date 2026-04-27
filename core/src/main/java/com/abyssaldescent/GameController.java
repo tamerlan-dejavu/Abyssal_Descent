@@ -1,20 +1,17 @@
 package com.abyssaldescent;
 
-import com.abyssaldescent.entity.CharacterType;
-import com.abyssaldescent.entity.PlayerSlot;
-import com.abyssaldescent.entity.PlayerStatus;
+import com.abyssaldescent.entity.player.CharacterType;
+import com.abyssaldescent.entity.player.PlayerSlot;
+import com.abyssaldescent.entity.player.PlayerStatus;
+
 import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.GamePhaseChangedEvent;
 
-
 public final class GameController {
-
     public static final int FIRST_FLOOR = 1;
-    public static final int FINAL_FLOOR = 25;
-
+    public static final int FINAL_FLOOR = 3;
     private final GameStateManager state;
     private final EventBus eventBus;
-
     private GamePhase phase = GamePhase.MENU;
 
     public GameController() {
@@ -30,7 +27,6 @@ public final class GameController {
     public void startNewRun() {
         state.resetForNewRun();
         state.activateKarin();
-        state.activateRayn();
         changePhase(GamePhase.PLAYING);
     }
 
@@ -75,16 +71,15 @@ public final class GameController {
         if (damage < 0) {
             throw new IllegalArgumentException("damage must be >= 0, got " + damage);
         }
-        PlayerSlot slot = state.getSlot(character);
-        if (!slot.isActive() || slot.getStatus() == PlayerStatus.GHOST) {
+        if (!state.getKarinSlot().isActive() || state.getKarinSlot().getStatus() == PlayerStatus.GHOST) {
             return;
         }
-        if (slot.getStatus() == PlayerStatus.INVINCIBLE) {
+        if (state.getKarinSlot().getStatus() == PlayerStatus.INVINCIBLE) {
             return;
         }
-        slot.applyDamage(damage);
+        state.getKarinSlot().applyDamage(damage);
 
-        if (slot.isDead()) {
+        if (state.getKarinSlot().isDead()) {
             handleDeath(character);
         }
     }
@@ -93,31 +88,17 @@ public final class GameController {
         if (amount < 0) {
             throw new IllegalArgumentException("amount must be >= 0, got " + amount);
         }
-        PlayerSlot slot = state.getSlot(character);
+        PlayerSlot slot = state.getKarinSlot();
         if (!slot.isActive() || slot.getStatus() == PlayerStatus.GHOST) {
             return;
         }
         slot.heal(amount);
     }
 
-    public void reviveCompanionAtAltar() {
-        PlayerSlot rayn = state.getRaynSlot();
-        if (!rayn.isActive() || rayn.getStatus() != PlayerStatus.GHOST) {
-            return;
-        }
-        rayn.setCurrentHp(CharacterType.RAYN.getMaxHp() / 2);
-        state.setPlayerStatus(CharacterType.RAYN, PlayerStatus.ALIVE);
-    }
-
 
     private void handleDeath(CharacterType character) {
-        if (character == CharacterType.KARIN) {
-            state.setPlayerStatus(CharacterType.KARIN, PlayerStatus.GHOST);
-            changePhase(GamePhase.GAME_OVER);
-        } else {
-            
-            state.setPlayerStatus(CharacterType.RAYN, PlayerStatus.GHOST);
-        }
+        state.setPlayerStatus(CharacterType.KARIN, PlayerStatus.GHOST);
+        changePhase(GamePhase.GAME_OVER);
     }
 
     private void changePhase(GamePhase next) {

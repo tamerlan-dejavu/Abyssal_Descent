@@ -1,7 +1,0 @@
-package com.abyssaldescent.core.entity.ai;
-
-import com.abyssaldescent.core.entity.Enemy;
-
-public interface EnemyStrategy {
-    void execute(Enemy enemy, float delta);
-}

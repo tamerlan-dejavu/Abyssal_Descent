@@ -1,9 +1,8 @@
 package com.abyssaldescent.command;
 
-import com.abyssaldescent.entity.PlayerContext;
+import com.abyssaldescent.entity.player.PlayerContext;
 
 public final class DashCommand implements Command {
-
     public static final DashCommand INSTANCE = new DashCommand();
 
     private DashCommand() {}

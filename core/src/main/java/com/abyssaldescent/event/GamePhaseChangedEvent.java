@@ -3,7 +3,6 @@ package com.abyssaldescent.event;
 import com.abyssaldescent.GamePhase;
 
 public final class GamePhaseChangedEvent extends GameEvent {
-
     private final GamePhase previousPhase;
     private final GamePhase newPhase;
 
@@ -14,6 +13,5 @@ public final class GamePhaseChangedEvent extends GameEvent {
     }
 
     public GamePhase getPreviousPhase() { return previousPhase; }
-
     public GamePhase getNewPhase() { return newPhase; }
 }
