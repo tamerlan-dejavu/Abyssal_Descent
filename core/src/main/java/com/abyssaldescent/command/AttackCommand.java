@@ -1,9 +1,8 @@
 package com.abyssaldescent.command;
 
-import com.abyssaldescent.entity.PlayerContext;
+import com.abyssaldescent.entity.player.PlayerContext;
 
 public final class AttackCommand implements Command {
-
     public static final AttackCommand INSTANCE = new AttackCommand();
 
     private AttackCommand() {}

@@ -62,7 +62,6 @@ public final class Enemy {
     public EnemyStrategy getStrategy() { return strategy; }
     public EnemyState getCurrentState() { return currentState; }
     public String getStateName() { return currentState.getName(); }
-
     public float getX() { return context.getPosition().x; }
     public float getY() { return context.getPosition().y; }
     public int getCurrentHp() { return context.getCurrentHp(); }

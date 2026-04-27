@@ -1,14 +1,12 @@
 package com.abyssaldescent.event;
 
 public final class PlayerDashEvent extends GameEvent {
-
     private final float originX;
     private final float originY;
     private final float directionX;
     private final float directionY;
 
-    public PlayerDashEvent(float originX, float originY,
-                           float directionX, float directionY) {
+    public PlayerDashEvent(float originX, float originY, float directionX, float directionY) {
         this.originX = originX;
         this.originY = originY;
         this.directionX = directionX;
