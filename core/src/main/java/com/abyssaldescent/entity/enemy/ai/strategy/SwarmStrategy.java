@@ -3,6 +3,8 @@ package com.abyssaldescent.entity.enemy.ai.strategy;
 import com.abyssaldescent.entity.enemy.EnemyContext;
 
 public final class SwarmStrategy implements EnemyStrategy {
+    public static final float ATTACK_COOLDOWN_OVERRIDE = 0.6f;
+
     @Override
     public void updateChase(EnemyContext ctx, float dt) {
         float dx = ctx.getTargetPosition().x - ctx.getPosition().x;
@@ -25,6 +27,11 @@ public final class SwarmStrategy implements EnemyStrategy {
     @Override
     public float getEngagementRange(EnemyContext ctx) {
         return ctx.getType().getAttackRange();
+    }
+
+    @Override
+    public float getAttackCooldown() {
+        return ATTACK_COOLDOWN_OVERRIDE;
     }
 
     @Override
