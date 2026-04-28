@@ -1,10 +1,12 @@
 package com.abyssaldescent.entity.enemy;
 
-import com.abyssaldescent.entity.enemy.ai.EnemyStrategy;
-import com.abyssaldescent.entity.enemy.ai.HeavyStrategy;
-import com.abyssaldescent.entity.enemy.ai.RangedStrategy;
-import com.abyssaldescent.entity.enemy.ai.StealthStrategy;
-import com.abyssaldescent.entity.enemy.ai.SwarmStrategy;
+import com.abyssaldescent.entity.enemy.ai.strategy.EnemyStrategy;
+import com.abyssaldescent.entity.enemy.ai.strategy.HeavyStrategy;
+import com.abyssaldescent.entity.enemy.ai.strategy.RangedStrategy;
+import com.abyssaldescent.entity.enemy.ai.strategy.StationaryStrategy;
+import com.abyssaldescent.entity.enemy.ai.strategy.StealthStrategy;
+import com.abyssaldescent.entity.enemy.ai.strategy.SwarmStrategy;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class EnemyFactory {
@@ -19,10 +21,11 @@ public final class EnemyFactory {
 
     protected EnemyStrategy createStrategy(EnemyType type) {
         switch (type.getAiKind()) {
-            case SWARM:   return new SwarmStrategy();
-            case RANGED:  return new RangedStrategy();
-            case HEAVY:   return new HeavyStrategy();
-            case STEALTH: return new StealthStrategy();
+            case SWARM:       return new SwarmStrategy();
+            case RANGED:      return new RangedStrategy();
+            case HEAVY:       return new HeavyStrategy();
+            case STEALTH:     return new StealthStrategy();
+            case STATIONARY:  return new StationaryStrategy();
             default: throw new IllegalArgumentException("Unknown AI kind: " + type.getAiKind());
         }
     }

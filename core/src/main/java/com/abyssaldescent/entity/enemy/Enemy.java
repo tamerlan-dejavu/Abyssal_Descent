@@ -1,9 +1,9 @@
 package com.abyssaldescent.entity.enemy;
 
-import com.abyssaldescent.entity.enemy.ai.DeadState;
-import com.abyssaldescent.entity.enemy.ai.EnemyState;
-import com.abyssaldescent.entity.enemy.ai.EnemyStrategy;
-import com.abyssaldescent.entity.enemy.ai.IdleState;
+import com.abyssaldescent.entity.enemy.ai.state.DeadState;
+import com.abyssaldescent.entity.enemy.ai.state.EnemyState;
+import com.abyssaldescent.entity.enemy.ai.state.IdleState;
+import com.abyssaldescent.entity.enemy.ai.strategy.EnemyStrategy;
 import com.abyssaldescent.event.EnemyDeathEvent;
 import com.abyssaldescent.event.EventBus;
 

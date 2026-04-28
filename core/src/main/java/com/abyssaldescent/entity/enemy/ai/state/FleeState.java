@@ -1,6 +1,7 @@
-package com.abyssaldescent.entity.enemy.ai;
+package com.abyssaldescent.entity.enemy.ai.state;
 
 import com.abyssaldescent.entity.enemy.EnemyContext;
+import com.abyssaldescent.entity.enemy.ai.strategy.EnemyStrategy;
 
 public final class FleeState implements EnemyState {
     public static final FleeState INSTANCE = new FleeState();

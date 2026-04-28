@@ -1,4 +1,4 @@
-package com.abyssaldescent.entity.enemy.ai;
+package com.abyssaldescent.entity.enemy.ai.strategy;
 
 import com.abyssaldescent.entity.enemy.EnemyContext;
 
@@ -7,4 +7,8 @@ public interface EnemyStrategy {
     int performAttack(EnemyContext ctx);
     float getEngagementRange(EnemyContext ctx);
     String getName();
+
+    default float getAttackCooldown() {
+        return EnemyContext.ATTACK_COOLDOWN;
+    }
 }

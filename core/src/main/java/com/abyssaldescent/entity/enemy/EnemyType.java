@@ -4,7 +4,7 @@ public enum EnemyType {
     // ЯРУС 1
     SHADOW_GOBLIN("Shadow Goblin", 15, 8,  1.5f, 0.5f, AiKind.SWARM),
     MOSS_CRAWLER ("Moss Crawler",  25, 12, 0.8f, 1.2f, AiKind.HEAVY),
-    STONE_WATCHER("Stone Watcher", 30, 15, 0f,   5f,   AiKind.RANGED),
+    STONE_WATCHER("Stone Watcher", 30, 15, 0f,   5f,   AiKind.STATIONARY),
 
 // ЯРУС 2
     BONE_ARCHER  ("Bone Archer",   20, 10, 0.6f, 6f,   AiKind.RANGED),
@@ -19,7 +19,7 @@ public enum EnemyType {
 // БОСС
     MALTARION_ECHO("Maltarion Echo",500,0, 0.5f, 3f,  AiKind.RANGED);
 
-    public enum AiKind { SWARM, RANGED, HEAVY, STEALTH, GRAVITY }
+    public enum AiKind { SWARM, RANGED, HEAVY, STEALTH, STATIONARY, GRAVITY }
 
     private final String displayName;
     private final int maxHp;

@@ -1,4 +1,4 @@
-package com.abyssaldescent.entity.enemy.ai;
+package com.abyssaldescent.entity.enemy.ai.strategy;
 
 import com.abyssaldescent.entity.enemy.EnemyContext;
 

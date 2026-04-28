@@ -1,6 +1,7 @@
-package com.abyssaldescent.entity.enemy.ai;
+package com.abyssaldescent.entity.enemy.ai.state;
 
 import com.abyssaldescent.entity.enemy.EnemyContext;
+import com.abyssaldescent.entity.enemy.ai.strategy.EnemyStrategy;
 import com.abyssaldescent.event.DamageEvent;
 import com.abyssaldescent.event.EventBus;
 
@@ -20,9 +21,7 @@ public final class AttackState implements EnemyState {
     }
 
     @Override
-    public void exit(EnemyContext ctx) {
-        ctx.setAttackCooldown(EnemyContext.ATTACK_COOLDOWN);
-    }
+    public void exit(EnemyContext ctx) {}
 
     @Override
     public EnemyState update(EnemyContext ctx, EnemyStrategy strategy, float dt) {
@@ -35,6 +34,7 @@ public final class AttackState implements EnemyState {
                         new DamageEvent(PLAYER_TARGET_ID, dmg, ctx.getType().name())
                 );
             }
+            ctx.setAttackCooldown(strategy.getAttackCooldown());
             if (ctx.isLowHp()) {
                 return FleeState.INSTANCE;
             }
