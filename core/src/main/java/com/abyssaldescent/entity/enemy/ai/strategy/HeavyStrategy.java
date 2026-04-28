@@ -1,15 +1,17 @@
-package com.abyssaldescent.entity.enemy.ai;
+package com.abyssaldescent.entity.enemy.ai.strategy;
 
 import com.abyssaldescent.entity.enemy.EnemyContext;
 
-public final class SwarmStrategy implements EnemyStrategy {
+public final class HeavyStrategy implements EnemyStrategy {
+    public static final float HEAVY_DAMAGE_MULTIPLIER = 1.5f;
+
     @Override
     public void updateChase(EnemyContext ctx, float dt) {
         float dx = ctx.getTargetPosition().x - ctx.getPosition().x;
         float dy = ctx.getTargetPosition().y - ctx.getPosition().y;
         float len = (float) Math.sqrt(dx * dx + dy * dy);
         if (len > 0.0001f) {
-            float speed = ctx.getType().getSpeed();
+            float speed = ctx.getType().getSpeed() * 0.7f;
             ctx.setVelocity((dx / len) * speed, (dy / len) * speed);
             ctx.setFacing(dx, dy);
         } else {
@@ -19,14 +21,14 @@ public final class SwarmStrategy implements EnemyStrategy {
 
     @Override
     public int performAttack(EnemyContext ctx) {
-        return ctx.getType().getDamage();
+        return Math.round(ctx.getType().getDamage() * HEAVY_DAMAGE_MULTIPLIER);
     }
 
     @Override
     public float getEngagementRange(EnemyContext ctx) {
-        return ctx.getType().getAttackRange();
+        return ctx.getType().getAttackRange() + 0.3f;
     }
 
     @Override
-    public String getName() { return "Swarm"; }
+    public String getName() { return "Heavy"; }
 }
