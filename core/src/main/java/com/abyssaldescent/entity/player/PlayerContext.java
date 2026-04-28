@@ -33,6 +33,13 @@ public final class PlayerContext {
     private boolean invincible;
     private boolean onGround = true;
 
+    private float slowMultiplier         = 1.0f;
+    private float slowTimer              = 0f;
+    private boolean grabbed              = false;
+    private float grabTimer              = 0f;
+    private int   grabDps                = 0;
+    private float grabDamageAccumulator  = 0f;
+
     public Vector2 getPosition() { return position; }
     public void setPosition(float x, float y) { position.set(x, y); }
 
@@ -99,4 +106,46 @@ public final class PlayerContext {
         jumpRequested     = false;
         interactRequested = false;
     }
+
+    public void applySlow(float magnitude, float duration) {
+        slowMultiplier = 1f - magnitude;
+        slowTimer      = duration;
+    }
+
+    public void applyGrab(int dps, float duration) {
+        grabbed               = true;
+        grabDps               = dps;
+        grabTimer             = duration;
+        grabDamageAccumulator = 0f;
+    }
+
+    public int tickEffects(float dt) {
+        if (slowTimer > 0) {
+            slowTimer -= dt;
+            if (slowTimer <= 0) {
+                slowMultiplier = 1.0f;
+                slowTimer      = 0f;
+            }
+        }
+        int grabDmg = 0;
+        if (grabbed) {
+            grabTimer             -= dt;
+            grabDamageAccumulator += grabDps * dt;
+            if (grabDamageAccumulator >= 1f) {
+                grabDmg               = (int) grabDamageAccumulator;
+                grabDamageAccumulator -= grabDmg;
+            }
+            if (grabTimer <= 0) {
+                grabbed  = false;
+                grabTimer = 0f;
+                grabDps   = 0;
+            }
+        }
+        return grabDmg;
+    }
+
+    public float getEffectiveSpeedMultiplier() { return grabbed ? 0f : slowMultiplier; }
+    public boolean isSlowed()  { return slowTimer > 0; }
+    public float getSlowMultiplier() { return slowMultiplier; }
+    public boolean isGrabbed() { return grabbed; }
 }
