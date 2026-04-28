@@ -35,4 +35,20 @@ public final class RoomManager {
     public int getRoomCount() {
         return rooms.size();
     }
+
+    public boolean openDoor(String doorId, Key key) {
+        if (currentRoom == null || key == null) {
+            return false;
+        }
+
+        for (Door door : currentRoom.getDoors()) {
+            if (door.getId().equals(doorId) && !door.isOpen()) {
+                if (door.canOpen(key)) {
+                    door.open();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
