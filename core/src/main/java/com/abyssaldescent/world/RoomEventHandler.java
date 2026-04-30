@@ -38,16 +38,13 @@ public final class RoomEventHandler {
 
     private void handleDoorOpened(DoorOpenedEvent event) {
         Room currentRoom = roomManager.getCurrentRoom();
-        if (currentRoom == null) {
-            return;
-        }
+        if (currentRoom == null) return;
 
-        if (currentRoom.isCleared()) {
-            transitionToNextRoom(event.getDoorId());
-        }
-    }
+        Door door = currentRoom.getDoor(event.getDoorId());
+        if (door == null || door.getTargetRoomId() == null) return;
 
-    private void transitionToNextRoom(String doorId) {
-        roomManager.setCurrentRoom(doorId);
+        if (!currentRoom.getType().spawnsEnemies() || currentRoom.isCleared()) {
+            roomManager.transitionThroughDoor(door.getId());
+        }
     }
 }

@@ -24,11 +24,14 @@ public final class DoorOpeningSystem {
         }
 
         Door door = findDoorById(currentRoom, doorId);
-        if (door == null || door.isOpen()) {
-            return false;
+        if (door == null) return false;
+
+        if (door.isOpen()) {
+            eventBus.post(new DoorOpenedEvent(doorId, door.getRequiredKeyId()));
+            return true;
         }
 
-        if (keyInventory.hasKey(door.getRequiredKeyId())) {
+        if (!door.isLocked() || keyInventory.hasKey(door.getRequiredKeyId())) {
             door.open();
             eventBus.post(new DoorOpenedEvent(doorId, door.getRequiredKeyId()));
             return true;
