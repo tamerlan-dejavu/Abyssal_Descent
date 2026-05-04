@@ -4,7 +4,7 @@ import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.PlayerInteractionEvent;
 
 public final class PlayerInteractionSystem {
-    private static final float DOOR_WALL_MARGIN = 1.5f;
+    private static final float DOOR_WALL_MARGIN = 0.25f; // matches WALL_THICKNESS * 0.5f
 
     private final RoomManager roomManager;
     private final DoorOpeningSystem doorOpeningSystem;
