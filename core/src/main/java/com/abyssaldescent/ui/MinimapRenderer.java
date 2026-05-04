@@ -128,17 +128,33 @@ public final class MinimapRenderer {
         }
         shapes.end();
 
-        // Room outlines
+        // Room outlines + bright border + player dot for current room
         shapes.begin(ShapeRenderer.ShapeType.Line);
-        shapes.setColor(0.45f, 0.45f, 0.45f, 1f);
         for (Room r : tierRooms) {
             int[] pos = layout.get(r.getId());
             if (pos == null) continue;
             int cx = MARGIN + pos[0] * (CELL_W + GAP);
             int cy = screenH - MARGIN - (pos[1] + 1) * (CELL_H + GAP) + GAP;
+            if (r.getId().equals(currentRoom.getId())) {
+                shapes.setColor(1f, 1f, 1f, 1f);
+                shapes.rect(cx - 1, cy - 1, CELL_W + 2, CELL_H + 2);
+            } else {
+                shapes.setColor(0.45f, 0.45f, 0.45f, 1f);
+            }
             shapes.rect(cx, cy, CELL_W, CELL_H);
         }
         shapes.end();
+
+        // Player dot in center of current room cell
+        int[] curPos = layout.get(currentRoom.getId());
+        if (curPos != null) {
+            int cx = MARGIN + curPos[0] * (CELL_W + GAP) + CELL_W / 2;
+            int cy = screenH - MARGIN - (curPos[1] + 1) * (CELL_H + GAP) + GAP + CELL_H / 2;
+            shapes.begin(ShapeRenderer.ShapeType.Filled);
+            shapes.setColor(1f, 1f, 1f, 1f);
+            shapes.circle(cx, cy, 3f, 8);
+            shapes.end();
+        }
     }
 
     private static Color colorFor(RoomType type) {

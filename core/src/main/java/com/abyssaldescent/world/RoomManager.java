@@ -38,6 +38,18 @@ public final class RoomManager {
     }
 
     public void setCurrentRoom(String roomId) {
+        setCurrentRoom(roomId, null);
+    }
+
+    /**
+     * Transition to a new room, carrying the door direction used so the event
+     * receiver knows which wall the player entered from.
+     *
+     * @param roomId        target room id
+     * @param fromDirection direction of the door in the *previous* room that was used
+     *                      (e.g. EAST means player exited east → enters new room from WEST)
+     */
+    public void setCurrentRoom(String roomId, Direction fromDirection) {
         Room room = rooms.get(roomId);
         if (room == null) return;
 
@@ -46,7 +58,9 @@ public final class RoomManager {
         room.setVisited(true);
 
         if (eventBus != null) {
-            eventBus.post(new RoomEnteredEvent(room.getId()));
+            // entry direction = opposite of the door used to leave
+            Direction entryDir = fromDirection != null ? fromDirection.opposite() : null;
+            eventBus.post(new RoomEnteredEvent(room.getId(), entryDir));
             if (oldTier != null && oldTier != room.getTier()) {
                 eventBus.post(new TierTransitionEvent(oldTier, room.getTier()));
             }
@@ -94,7 +108,7 @@ public final class RoomManager {
         Door door = currentRoom.getDoor(doorId);
         if (door == null || !door.isOpen()) return false;
         if (door.getTargetRoomId() == null) return false;
-        setCurrentRoom(door.getTargetRoomId());
+        setCurrentRoom(door.getTargetRoomId(), door.getDirection());
         return true;
     }
 }

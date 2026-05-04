@@ -33,6 +33,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -47,38 +48,35 @@ import java.util.Map;
 
 public class GameApp extends ApplicationAdapter {
 
-    // Room is always 9 units tall; width comes from RoomSize
-    private static final float ROOM_H          = 9f;
-    // Wall thickness in world units — entities cannot enter this band
-    private static final float WALL_THICKNESS  = 0.5f;
-    // Door opening width (gap in the wall)
-    private static final float DOOR_GAP        = 1.5f;
+    // Room is always ROOM_H world units tall; width varies by RoomSize
+    private static final float ROOM_H         = 9f;
+    // Solid wall band thickness (world units) — no entity enters this zone
+    private static final float WALL_T         = 0.6f;
+    // Width of the passable gap cut in a wall where a door exists
+    private static final float DOOR_GAP       = 1.8f;
 
-    private static final float SPRITE_SIZE     = 0.8f;
-    private static final float ENEMY_SIZE      = 0.75f;
-    private static final float DOOR_SIZE       = 0.9f;
-    private static final float ATTACK_WINDUP_FRACTION = 0.4f;
-    private static final float DOOR_INTERACT_RANGE    = 2.0f;
+    private static final float SPRITE_SIZE    = 0.8f;
+    private static final float ENEMY_SIZE     = 0.75f;
+    private static final float INTERACT_RANGE = 2.0f;
+    private static final float ATTACK_WINDUP  = 0.4f;
+
+    // Offset from the wall where the player spawns after a door transition
+    private static final float SPAWN_OFFSET   = WALL_T + SPRITE_SIZE;
 
     private SpriteBatch batch;
     private ShapeRenderer shapes;
-    private OrthographicCamera camera;
 
-    // UI camera fixed to screen coords for minimap overlay
+    // World camera: always covers exactly roomW × ROOM_H world units
+    private OrthographicCamera camera;
+    // UI camera: screen-space pixels, for minimap overlay
     private OrthographicCamera uiCamera;
 
     private Texture karinIdleTexture;
     private Texture karinAttackWindupTexture;
     private Texture karinAttackStrikeTexture;
     private Texture fallbackFloor;
-    private Texture fallbackDoor;
-    private Texture fallbackDoorLocked;
-    private Texture fallbackDoorOpen;
 
     private final Map<String, Texture> roomBgCache = new HashMap<>();
-    private Texture doorTexture;
-    private Texture doorLockedTexture;
-    private Texture doorOpenTexture;
 
     private Player player;
     private PlayerInputHandler inputHandler;
@@ -103,11 +101,7 @@ public class GameApp extends ApplicationAdapter {
         batch  = new SpriteBatch();
         shapes = new ShapeRenderer();
 
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false, 16f, ROOM_H);
-        camera.position.set(8f, ROOM_H * 0.5f, 0);
-        camera.update();
-
+        camera   = new OrthographicCamera();
         uiCamera = new OrthographicCamera();
         uiCamera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         uiCamera.update();
@@ -115,18 +109,11 @@ public class GameApp extends ApplicationAdapter {
         karinIdleTexture         = tryLoadTexture("karin.png",               Color.CYAN);
         karinAttackWindupTexture = tryLoadOrFallback("karin_attack_windup.png", karinIdleTexture);
         karinAttackStrikeTexture = tryLoadOrFallback("karin_attack_strike.png", karinIdleTexture);
-
-        fallbackFloor       = buildDotGridTexture(new Color(0.22f, 0.22f, 0.22f, 1f), new Color(0.28f, 0.28f, 0.28f, 1f));
-        fallbackDoor        = solidTexture(new Color(0.5f, 0.5f, 0.5f, 1f));
-        fallbackDoorLocked  = solidTexture(new Color(0.75f, 0.55f, 0.1f, 1f));
-        fallbackDoorOpen    = solidTexture(new Color(0.2f, 0.75f, 0.3f, 1f));
-
-        doorTexture         = tryLoadOrFallback("doors/door.png",        fallbackDoor);
-        doorLockedTexture   = tryLoadOrFallback("doors/door_locked.png", fallbackDoorLocked);
-        doorOpenTexture     = tryLoadOrFallback("doors/door_open.png",   fallbackDoorOpen);
+        fallbackFloor            = buildDotGridTexture(
+                new Color(0.20f, 0.20f, 0.20f, 1f),
+                new Color(0.27f, 0.27f, 0.27f, 1f));
 
         EventBus eventBus = EventBus.getInstance();
-
         keyInventory      = new KeyInventory();
         roomManager       = new RoomManager(eventBus);
         dungeon           = new DungeonGenerator(new EnemyFactory()).generate();
@@ -134,7 +121,7 @@ public class GameApp extends ApplicationAdapter {
 
         combatManager = new CombatManager(eventBus, new MeleeStrategy());
         combatManager.setPlayerBaseDamage(15);
-        enemySprites  = new EnemySpriteRegistry();
+        enemySprites = new EnemySpriteRegistry();
 
         doorOpeningSystem = new DoorOpeningSystem(keyInventory, roomManager, eventBus);
         new RoomEventHandler(roomManager, eventBus);
@@ -146,16 +133,21 @@ public class GameApp extends ApplicationAdapter {
         minimapRenderer = new MinimapRenderer(dungeon);
 
         Room startRoom = dungeon.getRoom(dungeon.getStartRoomId());
-        player = new Player(startRoom.getSpawnPoint().x, startRoom.getSpawnPoint().y);
+        // First room: spawn in left-centre
+        float startX = SPAWN_OFFSET;
+        float startY = ROOM_H * 0.5f;
+        player = new Player(startX, startY);
 
         inputHandler = new PlayerInputHandler(player);
         Gdx.input.setInputProcessor(inputHandler);
         inputHandler.setCamera(camera);
 
         loadRoomEnemies(startRoom);
-        updateCameraForRoom(startRoom);
+        applyCameraForRoom(startRoom);
         musicPlayer.start();
     }
+
+    // ── Events ────────────────────────────────────────────────────────────────
 
     private void onRoomEntered(RoomEnteredEvent event) {
         Room room = dungeon.getRoom(event.getRoomId());
@@ -164,10 +156,43 @@ public class GameApp extends ApplicationAdapter {
         combatManager.getEnemies().clear();
         enemyOrientations.clear();
         enemyLastX.clear();
-
         loadRoomEnemies(room);
-        player.getContext().setPosition(room.getSpawnPoint().x, room.getSpawnPoint().y);
-        updateCameraForRoom(room);
+
+        // Place the player near the door they just came through
+        float roomW = room.getWidth();
+        float spawnX, spawnY;
+        Direction entry = event.getEntryDirection();
+        if (entry == null) {
+            // Very first room
+            spawnX = SPAWN_OFFSET;
+            spawnY = ROOM_H * 0.5f;
+        } else {
+            switch (entry) {
+                case WEST:
+                    // entered from the left wall → spawn just inside left wall
+                    spawnX = SPAWN_OFFSET;
+                    spawnY = ROOM_H * 0.5f;
+                    break;
+                case EAST:
+                    // entered from the right wall → spawn just inside right wall
+                    spawnX = roomW - SPAWN_OFFSET;
+                    spawnY = ROOM_H * 0.5f;
+                    break;
+                case NORTH:
+                    // entered from top wall → spawn just below top wall
+                    spawnX = roomW * 0.5f;
+                    spawnY = ROOM_H - SPAWN_OFFSET;
+                    break;
+                case SOUTH:
+                default:
+                    // entered from bottom wall → spawn just above bottom wall
+                    spawnX = roomW * 0.5f;
+                    spawnY = SPAWN_OFFSET;
+                    break;
+            }
+        }
+        player.getContext().setPosition(spawnX, spawnY);
+        applyCameraForRoom(room);
     }
 
     private void onTierTransition(TierTransitionEvent event) {
@@ -189,16 +214,20 @@ public class GameApp extends ApplicationAdapter {
         }
     }
 
-    /** Re-centres the camera and sets its viewport to show the full room width. */
-    private void updateCameraForRoom(Room room) {
+    /**
+     * Sets the camera so it shows exactly roomW × ROOM_H world units,
+     * centred on the room. LibGDX will letterbox/pillarbox on the GPU side
+     * when the screen aspect differs — the background fills the viewport exactly
+     * without any stretching.
+     */
+    private void applyCameraForRoom(Room room) {
         float roomW = room.getWidth();
-        float aspect = (float) Gdx.graphics.getWidth() / Math.max(1, Gdx.graphics.getHeight());
-        // Show full room width; adjust height to maintain aspect ratio
-        camera.viewportWidth  = roomW;
-        camera.viewportHeight = roomW / aspect;
+        camera.setToOrtho(false, roomW, ROOM_H);
         camera.position.set(roomW * 0.5f, ROOM_H * 0.5f, 0);
         camera.update();
     }
+
+    // ── Main render loop ─────────────────────────────────────────────────────
 
     @Override
     public void render() {
@@ -206,160 +235,67 @@ public class GameApp extends ApplicationAdapter {
         Room room = roomManager.getCurrentRoom();
         float roomW = room != null ? room.getWidth() : 16f;
 
+        // Input
         if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
             EventBus.getInstance().post(new PlayerInteractionEvent(
-                    player.getX(), player.getY(), DOOR_INTERACT_RANGE));
+                    player.getX(), player.getY(), INTERACT_RANGE));
         }
 
+        // Update
         inputHandler.update();
         player.update(dt);
-        clampPlayer(roomW, room);
+        clampPlayer(roomW);
 
         for (Enemy e : combatManager.getEnemies()) {
             e.observeTarget(player.getX(), player.getY(), true);
         }
         combatManager.update(dt);
-        clampEnemies(roomW, room);
+        clampEnemies(roomW);
 
-        ScreenUtils.clear(0, 0, 0, 1f);
+        // ── Clear ─────────────────────────────────────────────────────────────
+        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // ── World rendering ──────────────────────────────────────────────────
+        // ── World draw ───────────────────────────────────────────────────────
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        drawRoomBackground(room, roomW);
+        drawBackground(room, roomW);
         drawPlayer();
         drawEnemySprites();
-        drawDoors(room, roomW);
         batch.end();
 
+        // Shape-based world overlays
         shapes.setProjectionMatrix(camera.combined);
         renderWalls(room, roomW);
+        renderDoorMarkers(room, roomW);
         renderEnemyShapes();
         renderKeyPickups(room);
 
-        // ── UI overlay (minimap) ─────────────────────────────────────────────
+        // ── UI overlay ───────────────────────────────────────────────────────
         minimapRenderer.render(shapes, uiCamera, room);
     }
 
-    // ── Wall rendering ────────────────────────────────────────────────────────
-    /**
-     * Draws solid wall rectangles around the room perimeter.
-     * Door openings are left as gaps. Entities are clamped outside walls.
-     */
-    private void renderWalls(Room room, float roomW) {
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(0.15f, 0.12f, 0.10f, 1f);
+    // ── Background ────────────────────────────────────────────────────────────
 
-        float wt = WALL_THICKNESS;
-        float halfGap = DOOR_GAP * 0.5f;
-
-        // Floor (bottom wall)
-        shapes.rect(0, 0, roomW, wt);
-        // Ceiling (top wall)
-        shapes.rect(0, ROOM_H - wt, roomW, wt);
-
-        // West wall — check for WEST door gap
-        boolean hasWest  = room != null && room.getDoor(Direction.WEST)  != null;
-        boolean hasEast  = room != null && room.getDoor(Direction.EAST)  != null;
-        boolean hasNorth = room != null && room.getDoor(Direction.NORTH) != null;
-        boolean hasSouth = room != null && room.getDoor(Direction.SOUTH) != null;
-
-        float midY = ROOM_H * 0.5f;
-        float midX = roomW  * 0.5f;
-
-        // West wall
-        if (hasWest) {
-            shapes.rect(0, 0,              wt, midY - halfGap);               // below gap
-            shapes.rect(0, midY + halfGap, wt, ROOM_H - midY - halfGap - wt);// above gap
-        } else {
-            shapes.rect(0, wt, wt, ROOM_H - wt * 2f);
-        }
-
-        // East wall
-        if (hasEast) {
-            shapes.rect(roomW - wt, 0,              wt, midY - halfGap);
-            shapes.rect(roomW - wt, midY + halfGap, wt, ROOM_H - midY - halfGap - wt);
-        } else {
-            shapes.rect(roomW - wt, wt, wt, ROOM_H - wt * 2f);
-        }
-
-        // North wall (top)
-        if (hasNorth) {
-            shapes.rect(wt,                  ROOM_H - wt, midX - halfGap - wt, wt);
-            shapes.rect(midX + halfGap,      ROOM_H - wt, roomW - midX - halfGap - wt, wt);
-        } else {
-            shapes.rect(wt, ROOM_H - wt, roomW - wt * 2f, wt);
-        }
-
-        // South wall (bottom)
-        if (hasSouth) {
-            shapes.rect(wt,             0, midX - halfGap - wt, wt);
-            shapes.rect(midX + halfGap, 0, roomW - midX - halfGap - wt, wt);
-        } else {
-            shapes.rect(wt, 0, roomW - wt * 2f, wt);
-        }
-
-        shapes.end();
-    }
-
-    // ── Collision helpers ─────────────────────────────────────────────────────
-    /**
-     * Clamps an entity inside the room, respecting wall thickness.
-     * If a wall direction has a door, entities can enter the door gap zone
-     * but not pass fully through (the RoomManager handles the actual transition
-     * when E is pressed near a door).
-     */
-    private void clampPlayer(float roomW, Room room) {
-        float half = SPRITE_SIZE * 0.5f;
-        float wt   = WALL_THICKNESS;
-
-        float minX = wt + half;
-        float maxX = roomW - wt - half;
-        float minY = wt + half;
-        float maxY = ROOM_H - wt - half;
-
-        float x = MathUtils.clamp(player.getX(), minX, maxX);
-        float y = MathUtils.clamp(player.getY(), minY, maxY);
-        player.getContext().setPosition(x, y);
-    }
-
-    private void clampEnemies(float roomW, Room room) {
-        float half = ENEMY_SIZE * 0.5f;
-        float wt   = WALL_THICKNESS;
-
-        float minX = wt + half;
-        float maxX = roomW - wt - half;
-        float minY = wt + half;
-        float maxY = ROOM_H - wt - half;
-
-        for (Enemy e : combatManager.getEnemies()) {
-            float x = MathUtils.clamp(e.getX(), minX, maxX);
-            float y = MathUtils.clamp(e.getY(), minY, maxY);
-            if (x != e.getX() || y != e.getY()) {
-                e.getContext().setPosition(x, y);
-            }
-        }
-    }
-
-    // ── Room background ───────────────────────────────────────────────────────
-    private void drawRoomBackground(Room room, float roomW) {
-        Texture bg = room != null ? getRoomBackground(room) : fallbackFloor;
+    private void drawBackground(Room room, float roomW) {
+        Texture bg = room != null ? getBackground(room) : fallbackFloor;
         batch.setColor(Color.WHITE);
+        // Fill exactly the viewport — no stretching since camera covers roomW × ROOM_H
         batch.draw(bg, 0, 0, roomW, ROOM_H);
     }
 
-    private Texture getRoomBackground(Room room) {
+    private Texture getBackground(Room room) {
         if (roomBgCache.containsKey(room.getId())) return roomBgCache.get(room.getId());
 
+        String tierKey = tierFolderKey(room.getTier());
         String[] candidates = {
             "rooms/" + room.getId() + ".png",
             "rooms/" + room.getId() + ".jpg",
-            "rooms/" + tierFolderKey(room.getTier()) + ".png",
-            "rooms/" + tierFolderKey(room.getTier()) + ".jpg",
+            "rooms/" + tierKey + ".png",
+            "rooms/" + tierKey + ".jpg",
             "rooms/background.png",
             "rooms/background.jpg",
         };
-
         for (String path : candidates) {
             if (Gdx.files.internal(path).exists()) {
                 try {
@@ -370,7 +306,6 @@ public class GameApp extends ApplicationAdapter {
                 } catch (RuntimeException ignored) {}
             }
         }
-
         roomBgCache.put(room.getId(), fallbackFloor);
         return fallbackFloor;
     }
@@ -384,46 +319,110 @@ public class GameApp extends ApplicationAdapter {
         }
     }
 
-    // ── Door rendering ────────────────────────────────────────────────────────
-    private void drawDoors(Room room, float roomW) {
+    // ── Walls ─────────────────────────────────────────────────────────────────
+    /**
+     * Draws thick wall bands around the room. Where a door exists in a given
+     * direction, a gap of DOOR_GAP is cut at the wall midpoint.
+     */
+    private void renderWalls(Room room, float roomW) {
         if (room == null) return;
 
+        boolean hasW = room.getDoor(Direction.WEST)  != null;
+        boolean hasE = room.getDoor(Direction.EAST)  != null;
+        boolean hasN = room.getDoor(Direction.NORTH) != null;
+        boolean hasS = room.getDoor(Direction.SOUTH) != null;
+
+        float wt      = WALL_T;
+        float hg      = DOOR_GAP * 0.5f;
+        float midX    = roomW  * 0.5f;
+        float midY    = ROOM_H * 0.5f;
+
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(0.12f, 0.10f, 0.09f, 1f);
+
+        // Bottom wall
+        if (hasS) {
+            shapes.rect(0,              0, midX - hg, wt);
+            shapes.rect(midX + hg,      0, roomW - midX - hg, wt);
+        } else {
+            shapes.rect(0, 0, roomW, wt);
+        }
+        // Top wall
+        if (hasN) {
+            shapes.rect(0,              ROOM_H - wt, midX - hg, wt);
+            shapes.rect(midX + hg,      ROOM_H - wt, roomW - midX - hg, wt);
+        } else {
+            shapes.rect(0, ROOM_H - wt, roomW, wt);
+        }
+        // Left wall
+        if (hasW) {
+            shapes.rect(0, 0,           wt, midY - hg);
+            shapes.rect(0, midY + hg,   wt, ROOM_H - midY - hg);
+        } else {
+            shapes.rect(0, 0, wt, ROOM_H);
+        }
+        // Right wall
+        if (hasE) {
+            shapes.rect(roomW - wt, 0,          wt, midY - hg);
+            shapes.rect(roomW - wt, midY + hg,  wt, ROOM_H - midY - hg);
+        } else {
+            shapes.rect(roomW - wt, 0, wt, ROOM_H);
+        }
+
+        shapes.end();
+    }
+
+    /**
+     * Draws a coloured rectangle in each door gap so the player can see the exit.
+     * Open doors → green, locked → orange, closed (unlocked) → grey.
+     */
+    private void renderDoorMarkers(Room room, float roomW) {
+        if (room == null) return;
+
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
         for (Door door : room.getDoors()) {
-            float dx = doorCenterX(door, roomW);
-            float dy = doorCenterY(door);
-            float hw = DOOR_SIZE * 0.5f;
+            Color c = door.isOpen() ? new Color(0.2f, 0.7f, 0.3f, 1f)
+                    : door.isLocked() ? new Color(0.75f, 0.50f, 0.05f, 1f)
+                    : new Color(0.45f, 0.45f, 0.45f, 1f);
+            shapes.setColor(c);
 
-            Texture tex;
-            if (door.isOpen()) {
-                tex = doorOpenTexture;
-            } else if (door.isLocked()) {
-                tex = doorLockedTexture;
-            } else {
-                tex = doorTexture;
+            float hg   = DOOR_GAP * 0.5f;
+            float wt   = WALL_T;
+            float midX = roomW  * 0.5f;
+            float midY = ROOM_H * 0.5f;
+
+            switch (door.getDirection()) {
+                case WEST:  shapes.rect(0,              midY - hg, wt, DOOR_GAP); break;
+                case EAST:  shapes.rect(roomW - wt,     midY - hg, wt, DOOR_GAP); break;
+                case NORTH: shapes.rect(midX - hg, ROOM_H - wt,   DOOR_GAP, wt); break;
+                case SOUTH: shapes.rect(midX - hg, 0,              DOOR_GAP, wt); break;
             }
-
-            batch.setColor(Color.WHITE);
-            batch.draw(tex, dx - hw, dy - hw, DOOR_SIZE, DOOR_SIZE);
         }
+        shapes.end();
     }
 
-    private float doorCenterX(Door door, float roomW) {
-        switch (door.getDirection()) {
-            case EAST:  return roomW - WALL_THICKNESS * 0.5f;
-            case WEST:  return WALL_THICKNESS * 0.5f;
-            default:    return roomW * 0.5f;
-        }
+    // ── Collision clamping ────────────────────────────────────────────────────
+
+    private void clampPlayer(float roomW) {
+        float half = SPRITE_SIZE * 0.5f;
+        float x = MathUtils.clamp(player.getX(), WALL_T + half, roomW - WALL_T - half);
+        float y = MathUtils.clamp(player.getY(), WALL_T + half, ROOM_H - WALL_T - half);
+        player.getContext().setPosition(x, y);
     }
 
-    private float doorCenterY(Door door) {
-        switch (door.getDirection()) {
-            case NORTH: return ROOM_H - WALL_THICKNESS * 0.5f;
-            case SOUTH: return WALL_THICKNESS * 0.5f;
-            default:    return ROOM_H * 0.5f;
+    private void clampEnemies(float roomW) {
+        float half = ENEMY_SIZE * 0.5f;
+        float minX = WALL_T + half, maxX = roomW - WALL_T - half;
+        float minY = WALL_T + half, maxY = ROOM_H - WALL_T - half;
+        for (Enemy e : combatManager.getEnemies()) {
+            float x = MathUtils.clamp(e.getX(), minX, maxX);
+            float y = MathUtils.clamp(e.getY(), minY, maxY);
+            if (x != e.getX() || y != e.getY()) e.getContext().setPosition(x, y);
         }
     }
 
     // ── Key pickups ───────────────────────────────────────────────────────────
+
     private void renderKeyPickups(Room room) {
         if (room == null) return;
         List<Key> keys = room.getKeys();
@@ -440,7 +439,8 @@ public class GameApp extends ApplicationAdapter {
 
         for (Key key : keys) {
             if (!key.isCollected()) {
-                float dist = dst(player.getX(), player.getY(), key.getPosition().x, key.getPosition().y);
+                float dist = dst(player.getX(), player.getY(),
+                        key.getPosition().x, key.getPosition().y);
                 if (dist < 0.8f) {
                     key.collect();
                     keyInventory.addKey(key.getId());
@@ -449,12 +449,30 @@ public class GameApp extends ApplicationAdapter {
         }
     }
 
-    // ── Enemy rendering ───────────────────────────────────────────────────────
+    // ── Entity rendering ──────────────────────────────────────────────────────
+
+    private void drawPlayer() {
+        Texture frame = currentPlayerFrame();
+        playerOrientation.update(player.getContext().getFacing());
+        float half = SPRITE_SIZE * 0.5f;
+        batch.draw(frame,
+                player.getX() - half, player.getY() - half, SPRITE_SIZE, SPRITE_SIZE,
+                0, 0, frame.getWidth(), frame.getHeight(), playerOrientation.isFlipX(), false);
+    }
+
+    private Texture currentPlayerFrame() {
+        if (player.getCurrentState() != AttackingState.INSTANCE) return karinIdleTexture;
+        float t = player.getContext().getStateTimer();
+        return t < PlayerContext.ATTACK_DURATION * ATTACK_WINDUP
+                ? karinAttackWindupTexture : karinAttackStrikeTexture;
+    }
+
     private void drawEnemySprites() {
         for (Enemy e : combatManager.getEnemies()) {
             Texture tex = enemySprites.get(e.getType());
             if (tex == null) continue;
-            SpriteOrientation orient = enemyOrientations.computeIfAbsent(e.getId(), id -> new SpriteOrientation());
+            SpriteOrientation orient = enemyOrientations.computeIfAbsent(
+                    e.getId(), id -> new SpriteOrientation());
             Float prevX = enemyLastX.get(e.getId());
             if (prevX != null) orient.update(e.getX() - prevX);
             enemyLastX.put(e.getId(), e.getX());
@@ -464,27 +482,13 @@ public class GameApp extends ApplicationAdapter {
         }
     }
 
-    private void drawPlayer() {
-        Texture frame = currentPlayerFrame();
-        playerOrientation.update(player.getContext().getFacing());
-        float half = SPRITE_SIZE * 0.5f;
-        batch.draw(frame, player.getX() - half, player.getY() - half, SPRITE_SIZE, SPRITE_SIZE,
-                0, 0, frame.getWidth(), frame.getHeight(), playerOrientation.isFlipX(), false);
-    }
-
-    private Texture currentPlayerFrame() {
-        if (player.getCurrentState() != AttackingState.INSTANCE) return karinIdleTexture;
-        float t = player.getContext().getStateTimer();
-        return t < PlayerContext.ATTACK_DURATION * ATTACK_WINDUP_FRACTION
-                ? karinAttackWindupTexture : karinAttackStrikeTexture;
-    }
-
     private void renderEnemyShapes() {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         for (Enemy e : combatManager.getEnemies()) {
             if (!enemySprites.has(e.getType())) {
                 shapes.setColor(e.isDead() ? Color.DARK_GRAY : colorFor(e.getType()));
-                shapes.rect(e.getX() - ENEMY_SIZE * 0.5f, e.getY() - ENEMY_SIZE * 0.5f, ENEMY_SIZE, ENEMY_SIZE);
+                shapes.rect(e.getX() - ENEMY_SIZE * 0.5f, e.getY() - ENEMY_SIZE * 0.5f,
+                        ENEMY_SIZE, ENEMY_SIZE);
             }
             if (!e.isDead()) {
                 float hpPct = e.getCurrentHp() / (float) e.getType().getMaxHp();
@@ -516,25 +520,18 @@ public class GameApp extends ApplicationAdapter {
     }
 
     // ── Resize ────────────────────────────────────────────────────────────────
+
     @Override
     public void resize(int width, int height) {
         if (height == 0) return;
         uiCamera.setToOrtho(false, width, height);
         uiCamera.update();
-
         Room room = roomManager.getCurrentRoom();
-        if (room != null) {
-            updateCameraForRoom(room);
-        } else {
-            float aspect = (float) width / height;
-            camera.viewportWidth  = ROOM_H * aspect;
-            camera.viewportHeight = ROOM_H;
-            camera.position.set(8f, ROOM_H * 0.5f, 0);
-            camera.update();
-        }
+        if (room != null) applyCameraForRoom(room);
     }
 
     // ── Dispose ───────────────────────────────────────────────────────────────
+
     @Override
     public void dispose() {
         batch.dispose();
@@ -543,9 +540,6 @@ public class GameApp extends ApplicationAdapter {
         if (karinAttackWindupTexture != karinIdleTexture) karinAttackWindupTexture.dispose();
         if (karinAttackStrikeTexture != karinIdleTexture) karinAttackStrikeTexture.dispose();
         fallbackFloor.dispose();
-        fallbackDoor.dispose();
-        fallbackDoorLocked.dispose();
-        fallbackDoorOpen.dispose();
         for (Texture t : roomBgCache.values()) {
             if (t != fallbackFloor) t.dispose();
         }
@@ -554,10 +548,10 @@ public class GameApp extends ApplicationAdapter {
         if (combatManager != null) combatManager.dispose();
     }
 
-    // ── Utilities ─────────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     private float dst(float ax, float ay, float bx, float by) {
-        float dx = ax - bx;
-        float dy = ay - by;
+        float dx = ax - bx, dy = ay - by;
         return (float) Math.sqrt(dx * dx + dy * dy);
     }
 
@@ -593,16 +587,14 @@ public class GameApp extends ApplicationAdapter {
     }
 
     private Texture buildDotGridTexture(Color base, Color dot) {
-        int size = 32;
-        Pixmap p = new Pixmap(size, size, Pixmap.Format.RGBA8888);
+        int sz = 64;
+        Pixmap p = new Pixmap(sz, sz, Pixmap.Format.RGBA8888);
         p.setColor(base);
         p.fill();
         p.setColor(dot);
-        for (int x = 0; x < size; x += 8) {
-            for (int y = 0; y < size; y += 8) {
+        for (int x = 0; x < sz; x += 8)
+            for (int y = 0; y < sz; y += 8)
                 p.fillRectangle(x, y, 1, 1);
-            }
-        }
         Texture t = new Texture(p);
         t.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
         p.dispose();
