@@ -1,10 +1,10 @@
 package com.abyssaldescent.world;
 
 public enum RoomSize {
-    SMALL(15, 10),
-    MEDIUM(22, 14),
-    LARGE(32, 18),
-    HUGE(40, 24);
+    SMALL(20,  9),
+    MEDIUM(28, 9),
+    LARGE(38,  9),
+    HUGE(50,   9);
 
     private final int width;
     private final int height;
