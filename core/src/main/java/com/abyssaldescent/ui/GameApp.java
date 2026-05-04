@@ -48,8 +48,9 @@ import java.util.Map;
 
 public class GameApp extends ApplicationAdapter {
 
-    // Room is always ROOM_H world units tall; width varies by RoomSize
-    private static final float ROOM_H         = 9f;
+    // All rooms are 16×10 world units → maps to 2880×1800 px at the window scale
+    private static final float ROOM_W         = 16f;
+    private static final float ROOM_H         = 10f;
     // Solid wall band thickness (world units) — no entity enters this zone
     private static final float WALL_T         = 0.6f;
     // Width of the passable gap cut in a wall where a door exists
@@ -159,7 +160,6 @@ public class GameApp extends ApplicationAdapter {
         loadRoomEnemies(room);
 
         // Place the player near the door they just came through
-        float roomW = room.getWidth();
         float spawnX, spawnY;
         Direction entry = event.getEntryDirection();
         if (entry == null) {
@@ -175,18 +175,18 @@ public class GameApp extends ApplicationAdapter {
                     break;
                 case EAST:
                     // entered from the right wall → spawn just inside right wall
-                    spawnX = roomW - SPAWN_OFFSET;
+                    spawnX = ROOM_W - SPAWN_OFFSET;
                     spawnY = ROOM_H * 0.5f;
                     break;
                 case NORTH:
                     // entered from top wall → spawn just below top wall
-                    spawnX = roomW * 0.5f;
+                    spawnX = ROOM_W * 0.5f;
                     spawnY = ROOM_H - SPAWN_OFFSET;
                     break;
                 case SOUTH:
                 default:
                     // entered from bottom wall → spawn just above bottom wall
-                    spawnX = roomW * 0.5f;
+                    spawnX = ROOM_W * 0.5f;
                     spawnY = SPAWN_OFFSET;
                     break;
             }
@@ -221,9 +221,8 @@ public class GameApp extends ApplicationAdapter {
      * without any stretching.
      */
     private void applyCameraForRoom(Room room) {
-        float roomW = room.getWidth();
-        camera.setToOrtho(false, roomW, ROOM_H);
-        camera.position.set(roomW * 0.5f, ROOM_H * 0.5f, 0);
+        camera.setToOrtho(false, ROOM_W, ROOM_H);
+        camera.position.set(ROOM_W * 0.5f, ROOM_H * 0.5f, 0);
         camera.update();
     }
 
@@ -233,7 +232,7 @@ public class GameApp extends ApplicationAdapter {
     public void render() {
         float dt = Gdx.graphics.getDeltaTime();
         Room room = roomManager.getCurrentRoom();
-        float roomW = room != null ? room.getWidth() : 16f;
+        float roomW = ROOM_W;
 
         // Input
         if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
@@ -280,8 +279,7 @@ public class GameApp extends ApplicationAdapter {
     private void drawBackground(Room room, float roomW) {
         Texture bg = room != null ? getBackground(room) : fallbackFloor;
         batch.setColor(Color.WHITE);
-        // Fill exactly the viewport — no stretching since camera covers roomW × ROOM_H
-        batch.draw(bg, 0, 0, roomW, ROOM_H);
+        batch.draw(bg, 0, 0, ROOM_W, ROOM_H);
     }
 
     private Texture getBackground(Room room) {
@@ -334,7 +332,7 @@ public class GameApp extends ApplicationAdapter {
 
         float wt      = WALL_T;
         float hg      = DOOR_GAP * 0.5f;
-        float midX    = roomW  * 0.5f;
+        float midX    = ROOM_W * 0.5f;
         float midY    = ROOM_H * 0.5f;
 
         shapes.begin(ShapeRenderer.ShapeType.Filled);
@@ -343,16 +341,16 @@ public class GameApp extends ApplicationAdapter {
         // Bottom wall
         if (hasS) {
             shapes.rect(0,              0, midX - hg, wt);
-            shapes.rect(midX + hg,      0, roomW - midX - hg, wt);
+            shapes.rect(midX + hg,      0, ROOM_W - midX - hg, wt);
         } else {
-            shapes.rect(0, 0, roomW, wt);
+            shapes.rect(0, 0, ROOM_W, wt);
         }
         // Top wall
         if (hasN) {
             shapes.rect(0,              ROOM_H - wt, midX - hg, wt);
-            shapes.rect(midX + hg,      ROOM_H - wt, roomW - midX - hg, wt);
+            shapes.rect(midX + hg,      ROOM_H - wt, ROOM_W - midX - hg, wt);
         } else {
-            shapes.rect(0, ROOM_H - wt, roomW, wt);
+            shapes.rect(0, ROOM_H - wt, ROOM_W, wt);
         }
         // Left wall
         if (hasW) {
@@ -363,10 +361,10 @@ public class GameApp extends ApplicationAdapter {
         }
         // Right wall
         if (hasE) {
-            shapes.rect(roomW - wt, 0,          wt, midY - hg);
-            shapes.rect(roomW - wt, midY + hg,  wt, ROOM_H - midY - hg);
+            shapes.rect(ROOM_W - wt, 0,          wt, midY - hg);
+            shapes.rect(ROOM_W - wt, midY + hg,  wt, ROOM_H - midY - hg);
         } else {
-            shapes.rect(roomW - wt, 0, wt, ROOM_H);
+            shapes.rect(ROOM_W - wt, 0, wt, ROOM_H);
         }
 
         shapes.end();
@@ -388,14 +386,14 @@ public class GameApp extends ApplicationAdapter {
 
             float hg   = DOOR_GAP * 0.5f;
             float wt   = WALL_T;
-            float midX = roomW  * 0.5f;
+            float midX = ROOM_W * 0.5f;
             float midY = ROOM_H * 0.5f;
 
             switch (door.getDirection()) {
-                case WEST:  shapes.rect(0,              midY - hg, wt, DOOR_GAP); break;
-                case EAST:  shapes.rect(roomW - wt,     midY - hg, wt, DOOR_GAP); break;
-                case NORTH: shapes.rect(midX - hg, ROOM_H - wt,   DOOR_GAP, wt); break;
-                case SOUTH: shapes.rect(midX - hg, 0,              DOOR_GAP, wt); break;
+                case WEST:  shapes.rect(0,           midY - hg, wt, DOOR_GAP); break;
+                case EAST:  shapes.rect(ROOM_W - wt, midY - hg, wt, DOOR_GAP); break;
+                case NORTH: shapes.rect(midX - hg, ROOM_H - wt, DOOR_GAP, wt); break;
+                case SOUTH: shapes.rect(midX - hg, 0,           DOOR_GAP, wt); break;
             }
         }
         shapes.end();
@@ -405,14 +403,14 @@ public class GameApp extends ApplicationAdapter {
 
     private void clampPlayer(float roomW) {
         float half = SPRITE_SIZE * 0.5f;
-        float x = MathUtils.clamp(player.getX(), WALL_T + half, roomW - WALL_T - half);
+        float x = MathUtils.clamp(player.getX(), WALL_T + half, ROOM_W - WALL_T - half);
         float y = MathUtils.clamp(player.getY(), WALL_T + half, ROOM_H - WALL_T - half);
         player.getContext().setPosition(x, y);
     }
 
     private void clampEnemies(float roomW) {
         float half = ENEMY_SIZE * 0.5f;
-        float minX = WALL_T + half, maxX = roomW - WALL_T - half;
+        float minX = WALL_T + half, maxX = ROOM_W - WALL_T - half;
         float minY = WALL_T + half, maxY = ROOM_H - WALL_T - half;
         for (Enemy e : combatManager.getEnemies()) {
             float x = MathUtils.clamp(e.getX(), minX, maxX);

@@ -14,18 +14,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Renders a small top-left minimap showing visited rooms in the current tier.
+ * Renders a ~500×450 px minimap in the top-right corner showing visited rooms in the current tier.
  *
  * Each room is placed on a fixed grid defined by a layout map keyed on room ID.
- * Current room → yellow, visited → room-type colour, unvisited → very dark.
+ * Current room → yellow fill + white border + white dot, visited → room-type colour, unvisited → very dark.
  */
 public final class MinimapRenderer {
 
-    private static final int MARGIN   = 8;
-    private static final int CELL_W   = 20;
-    private static final int CELL_H   = 11;
-    private static final int GAP      = 2;
-    private static final int PADDING  = 4;
+    private static final int MARGIN   = 16;   // distance from screen edge
+    private static final int CELL_W   = 58;
+    private static final int CELL_H   = 40;
+    private static final int GAP      = 8;
+    private static final int PADDING  = 12;
 
     private final Dungeon dungeon;
     private final Map<String, int[]> layout = new HashMap<>();
@@ -103,19 +103,24 @@ public final class MinimapRenderer {
 
         int panelW = (maxCol + 1) * (CELL_W + GAP) - GAP + PADDING * 2;
         int panelH = (maxRow + 1) * (CELL_H + GAP) - GAP + PADDING * 2;
+        int screenW = Gdx.graphics.getWidth();
         int screenH = Gdx.graphics.getHeight();
+
+        // Top-right origin: panel right edge is MARGIN from screen right
+        int panelX = screenW - MARGIN - panelW;
+        int panelY = screenH - MARGIN - panelH;
 
         // Background panel
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(0f, 0f, 0f, 0.70f);
-        shapes.rect(MARGIN - PADDING, screenH - MARGIN - panelH, panelW, panelH);
+        shapes.setColor(0f, 0f, 0f, 0.75f);
+        shapes.rect(panelX, panelY, panelW, panelH);
 
         // Room fills
         for (Room r : tierRooms) {
             int[] pos = layout.get(r.getId());
             if (pos == null) continue;
-            int cx = MARGIN + pos[0] * (CELL_W + GAP);
-            int cy = screenH - MARGIN - (pos[1] + 1) * (CELL_H + GAP) + GAP;
+            int cx = panelX + PADDING + pos[0] * (CELL_W + GAP);
+            int cy = panelY + panelH - PADDING - (pos[1] + 1) * (CELL_H + GAP) + GAP;
             if (r.getId().equals(currentRoom.getId())) {
                 shapes.setColor(0.95f, 0.88f, 0.20f, 1f);
             } else if (r.isVisited()) {
@@ -128,16 +133,16 @@ public final class MinimapRenderer {
         }
         shapes.end();
 
-        // Room outlines + bright border + player dot for current room
+        // Room outlines + bright border for current room
         shapes.begin(ShapeRenderer.ShapeType.Line);
         for (Room r : tierRooms) {
             int[] pos = layout.get(r.getId());
             if (pos == null) continue;
-            int cx = MARGIN + pos[0] * (CELL_W + GAP);
-            int cy = screenH - MARGIN - (pos[1] + 1) * (CELL_H + GAP) + GAP;
+            int cx = panelX + PADDING + pos[0] * (CELL_W + GAP);
+            int cy = panelY + panelH - PADDING - (pos[1] + 1) * (CELL_H + GAP) + GAP;
             if (r.getId().equals(currentRoom.getId())) {
                 shapes.setColor(1f, 1f, 1f, 1f);
-                shapes.rect(cx - 1, cy - 1, CELL_W + 2, CELL_H + 2);
+                shapes.rect(cx - 2, cy - 2, CELL_W + 4, CELL_H + 4);
             } else {
                 shapes.setColor(0.45f, 0.45f, 0.45f, 1f);
             }
@@ -148,11 +153,11 @@ public final class MinimapRenderer {
         // Player dot in center of current room cell
         int[] curPos = layout.get(currentRoom.getId());
         if (curPos != null) {
-            int cx = MARGIN + curPos[0] * (CELL_W + GAP) + CELL_W / 2;
-            int cy = screenH - MARGIN - (curPos[1] + 1) * (CELL_H + GAP) + GAP + CELL_H / 2;
+            int cx = panelX + PADDING + curPos[0] * (CELL_W + GAP) + CELL_W / 2;
+            int cy = panelY + panelH - PADDING - (curPos[1] + 1) * (CELL_H + GAP) + GAP + CELL_H / 2;
             shapes.begin(ShapeRenderer.ShapeType.Filled);
             shapes.setColor(1f, 1f, 1f, 1f);
-            shapes.circle(cx, cy, 3f, 8);
+            shapes.circle(cx, cy, 6f, 10);
             shapes.end();
         }
     }
