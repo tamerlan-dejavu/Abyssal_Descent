@@ -28,7 +28,6 @@ import com.abyssaldescent.world.PlayerInteractionSystem;
 import com.abyssaldescent.world.Room;
 import com.abyssaldescent.world.RoomEventHandler;
 import com.abyssaldescent.world.RoomManager;
-import com.abyssaldescent.world.RoomType;
 import com.abyssaldescent.world.Tier;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
@@ -60,12 +59,6 @@ public class GameApp extends ApplicationAdapter {
     private static final float DOOR_SIZE       = 0.9f;
     private static final float ATTACK_WINDUP_FRACTION = 0.4f;
     private static final float DOOR_INTERACT_RANGE    = 2.0f;
-
-    // Minimap constants (in screen pixels)
-    private static final int MAP_MARGIN   = 8;
-    private static final int MAP_CELL_W   = 20;
-    private static final int MAP_CELL_H   = 11;
-    private static final int MAP_GAP      = 2;
 
     private SpriteBatch batch;
     private ShapeRenderer shapes;
@@ -101,9 +94,7 @@ public class GameApp extends ApplicationAdapter {
     private RoomManager roomManager;
     private KeyInventory keyInventory;
     private DoorOpeningSystem doorOpeningSystem;
-
-    // Minimap layout: room id → grid position (col, row) within tier
-    private final Map<String, int[]> minimapLayout = new HashMap<>();
+    private MinimapRenderer minimapRenderer;
 
     @Override
     public void create() {
@@ -152,7 +143,7 @@ public class GameApp extends ApplicationAdapter {
         eventBus.subscribe(RoomEnteredEvent.class,    this::onRoomEntered);
         eventBus.subscribe(TierTransitionEvent.class, this::onTierTransition);
 
-        buildMinimapLayouts();
+        minimapRenderer = new MinimapRenderer(dungeon);
 
         Room startRoom = dungeon.getRoom(dungeon.getStartRoomId());
         player = new Player(startRoom.getSpawnPoint().x, startRoom.getSpawnPoint().y);
@@ -164,51 +155,6 @@ public class GameApp extends ApplicationAdapter {
         loadRoomEnemies(startRoom);
         updateCameraForRoom(startRoom);
         musicPlayer.start();
-    }
-
-    // Build a simple grid layout for the minimap: assign each room a (col, row) cell
-    private void buildMinimapLayouts() {
-        // Tier 1 layout
-        minimapLayout.put("t1_start",     new int[]{0, 1});
-        minimapLayout.put("t1_treasure1", new int[]{0, 0});
-        minimapLayout.put("t1_combat1",   new int[]{1, 1});
-        minimapLayout.put("t1_combat2",   new int[]{2, 1});
-        minimapLayout.put("t1_rest1",     new int[]{3, 1});
-        minimapLayout.put("t1_combat3",   new int[]{1, 2});
-        minimapLayout.put("t1_treasure2", new int[]{2, 2});
-        minimapLayout.put("t1_combat4",   new int[]{3, 2});
-        minimapLayout.put("t1_secret1",   new int[]{1, 3});
-        minimapLayout.put("t1_rest2",     new int[]{3, 3});
-        minimapLayout.put("t1_boss",      new int[]{4, 2});
-
-        // Tier 2 layout
-        minimapLayout.put("t2_entrance",  new int[]{0, 0});
-        minimapLayout.put("t2_combat1",   new int[]{1, 0});
-        minimapLayout.put("t2_puzzle1",   new int[]{2, 0});
-        minimapLayout.put("t2_combat2",   new int[]{3, 0});
-        minimapLayout.put("t2_rest1",     new int[]{4, 0});
-        minimapLayout.put("t2_combat3",   new int[]{1, 1});
-        minimapLayout.put("t2_shop1",     new int[]{2, 1});
-        minimapLayout.put("t2_treasure1", new int[]{3, 1});
-        minimapLayout.put("t2_combat4",   new int[]{4, 1});
-        minimapLayout.put("t2_combat5",   new int[]{5, 1});
-        minimapLayout.put("t2_rest2",     new int[]{5, 2});
-        minimapLayout.put("t2_boss",      new int[]{6, 1});
-
-        // Tier 3 layout
-        minimapLayout.put("t3_entrance",  new int[]{0, 0});
-        minimapLayout.put("t3_combat1",   new int[]{1, 0});
-        minimapLayout.put("t3_combat2",   new int[]{2, 0});
-        minimapLayout.put("t3_rest1",     new int[]{3, 0});
-        minimapLayout.put("t3_combat3",   new int[]{4, 0});
-        minimapLayout.put("t3_combat4",   new int[]{1, 1});
-        minimapLayout.put("t3_shop1",     new int[]{2, 1});
-        minimapLayout.put("t3_combat5",   new int[]{4, 1});
-        minimapLayout.put("t3_combat6",   new int[]{4, 2});
-        minimapLayout.put("t3_rest2",     new int[]{1, 2});
-        minimapLayout.put("t3_treasure1", new int[]{2, 2});
-        minimapLayout.put("t3_secret2",   new int[]{2, 3});
-        minimapLayout.put("t3_boss",      new int[]{5, 1});
     }
 
     private void onRoomEntered(RoomEnteredEvent event) {
@@ -292,8 +238,7 @@ public class GameApp extends ApplicationAdapter {
         renderKeyPickups(room);
 
         // ── UI overlay (minimap) ─────────────────────────────────────────────
-        shapes.setProjectionMatrix(uiCamera.combined);
-        renderMinimap(room);
+        minimapRenderer.render(shapes, uiCamera, room);
     }
 
     // ── Wall rendering ────────────────────────────────────────────────────────
@@ -567,87 +512,6 @@ public class GameApp extends ApplicationAdapter {
             case SLAG_ELEMENTAL: return Color.SCARLET;
             case MALTARION_ECHO: return Color.MAGENTA;
             default:             return Color.RED;
-        }
-    }
-
-    // ── Minimap ───────────────────────────────────────────────────────────────
-    /**
-     * Draws a small grid map in the top-left corner showing all rooms in the
-     * current tier. Visited rooms are light; current room is highlighted;
-     * unvisited rooms are dark outlines only.
-     */
-    private void renderMinimap(Room currentRoom) {
-        if (currentRoom == null) return;
-
-        Tier tier = currentRoom.getTier();
-        List<Room> tierRooms = dungeon.getRoomsByTier(tier);
-
-        // Find grid bounds
-        int maxCol = 0, maxRow = 0;
-        for (Room r : tierRooms) {
-            int[] pos = minimapLayout.get(r.getId());
-            if (pos != null) {
-                maxCol = Math.max(maxCol, pos[0]);
-                maxRow = Math.max(maxRow, pos[1]);
-            }
-        }
-
-        int totalW = (maxCol + 1) * (MAP_CELL_W + MAP_GAP) - MAP_GAP + 4;
-        int totalH = (maxRow + 1) * (MAP_CELL_H + MAP_GAP) - MAP_GAP + 4;
-        int screenH = Gdx.graphics.getHeight();
-
-        // Background panel
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(0f, 0f, 0f, 0.65f);
-        shapes.rect(MAP_MARGIN - 2, screenH - MAP_MARGIN - totalH - 2, totalW, totalH + 4);
-        shapes.end();
-
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        for (Room r : tierRooms) {
-            int[] pos = minimapLayout.get(r.getId());
-            if (pos == null) continue;
-
-            int cellX = MAP_MARGIN + pos[0] * (MAP_CELL_W + MAP_GAP);
-            int cellY = screenH - MAP_MARGIN - (pos[1] + 1) * (MAP_CELL_H + MAP_GAP) + MAP_GAP;
-
-            if (r.getId().equals(currentRoom.getId())) {
-                // Current room — bright highlight
-                shapes.setColor(0.9f, 0.85f, 0.2f, 1f);
-            } else if (r.isVisited()) {
-                // Visited — dim fill coloured by room type
-                shapes.setColor(roomTypeColor(r.getType()));
-            } else {
-                // Unvisited — very dark
-                shapes.setColor(0.15f, 0.15f, 0.15f, 1f);
-            }
-            shapes.rect(cellX, cellY, MAP_CELL_W, MAP_CELL_H);
-        }
-        shapes.end();
-
-        // Draw outlines for all rooms
-        shapes.begin(ShapeRenderer.ShapeType.Line);
-        shapes.setColor(0.5f, 0.5f, 0.5f, 1f);
-        for (Room r : tierRooms) {
-            int[] pos = minimapLayout.get(r.getId());
-            if (pos == null) continue;
-            int cellX = MAP_MARGIN + pos[0] * (MAP_CELL_W + MAP_GAP);
-            int cellY = screenH - MAP_MARGIN - (pos[1] + 1) * (MAP_CELL_H + MAP_GAP) + MAP_GAP;
-            shapes.rect(cellX, cellY, MAP_CELL_W, MAP_CELL_H);
-        }
-        shapes.end();
-    }
-
-    private Color roomTypeColor(RoomType type) {
-        switch (type) {
-            case START:    return new Color(0.3f, 0.6f, 0.3f, 1f);
-            case COMBAT:   return new Color(0.5f, 0.2f, 0.2f, 1f);
-            case BOSS:     return new Color(0.7f, 0.1f, 0.1f, 1f);
-            case REST:     return new Color(0.2f, 0.4f, 0.6f, 1f);
-            case TREASURE: return new Color(0.6f, 0.5f, 0.1f, 1f);
-            case SHOP:     return new Color(0.4f, 0.3f, 0.6f, 1f);
-            case PUZZLE:   return new Color(0.3f, 0.4f, 0.5f, 1f);
-            case CORRIDOR: return new Color(0.25f, 0.25f, 0.25f, 1f);
-            default:       return new Color(0.3f, 0.3f, 0.3f, 1f);
         }
     }
 
