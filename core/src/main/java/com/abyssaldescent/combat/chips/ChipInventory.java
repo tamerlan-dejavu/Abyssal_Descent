@@ -124,4 +124,6 @@ public final class ChipInventory {
             observer.onChipRemoved(slot);
         }
     }
+    
 }
+

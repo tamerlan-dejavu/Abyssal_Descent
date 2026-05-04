@@ -9,7 +9,7 @@ public final class ChipFactory {
             throw new IllegalArgumentException("ChipType cannot be null");
         }
         switch (type) {
-            case DAMAGE:      return new DamageChip(wrapped);
+            case STRENGTH:      return new DamageChip(wrapped);
             case VAMPIRE:     return new VampireChip(wrapped);
             case SHIELD:      return new ShieldChip(wrapped);
             case BERSERK:     return new BerserkChip(wrapped);

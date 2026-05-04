@@ -1,0 +1,69 @@
+package com.abyssaldescent.combat.chips;
+
+import com.abyssaldescent.entity.Enemy;
+import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.GameEvent;
+
+import java.util.Random;
+
+
+public class ChipSpawner {
+
+    private final ChipFactory chipFactory;
+    private final EventBus eventBus;
+    private final Random random;
+
+    public ChipSpawner(ChipFactory chipFactory, EventBus eventBus) {
+        this.chipFactory = chipFactory;
+        this.eventBus = eventBus;
+        this.random = new Random();
+    }
+
+
+    public void onEnemyDeath(Enemy enemy, float x, float y) {
+        EnemyChipDrop drop = EnemyChipDrop.forEnemy(enemy.getType());
+
+        if (drop == null) return; // враг не дропает чипы
+
+        float roll = random.nextFloat(); // 0.0 – 1.0
+        if (roll > drop.getDropChance()) return; // не повезло
+
+        Chip chip = chipFactory.createChip(drop.getChipType());
+        chip.setPosition(x, y);
+
+        eventBus.post(new GameEvent(GameEvent.Type.CHIP_SPAWNED, chip));
+    }
+
+   
+    private enum EnemyChipDrop {
+        GOBLIN_SHADOW    (EnemyType.GOBLIN_SHADOW,      ChipType.STRENGTH,      0.30f),
+        MOSS_CRAWLER     (EnemyType.MOSS_CRAWLER,       ChipType.SPEED,         0.25f),
+        STONE_WATCHER    (EnemyType.STONE_WATCHER,      ChipType.HEALTH,        0.20f),
+        BONE_SHOOTER     (EnemyType.BONE_SHOOTER,       ChipType.SPEED,         0.30f),
+        DROWNED          (EnemyType.DROWNED,            ChipType.DOUBLE_JUMP,   0.20f),
+        RIFT_MEDUSA      (EnemyType.RIFT_MEDUSA,        ChipType.SHIELD,        0.25f),
+        RIFT_KNIGHT      (EnemyType.RIFT_KNIGHT,        ChipType.BERSERK,       0.30f),
+        LAVA_SERPENT     (EnemyType.LAVA_SERPENT,       ChipType.VAMPIRE,       0.25f),
+        SLAG_ELEMENTAL   (EnemyType.SLAG_ELEMENTAL,     ChipType.ICE_ARROW,     0.20f);
+
+        private final EnemyType enemyType;
+        private final ChipType chipType;
+        private final float dropChance;
+
+        EnemyChipDrop(EnemyType enemyType, ChipType chipType, float dropChance) {
+            this.enemyType = enemyType;
+            this.chipType  = chipType;
+            this.dropChance = dropChance;
+        }
+
+        public float getDropChance() { return dropChance; }
+        public ChipType getChipType() { return chipType; }
+
+        public static EnemyChipDrop forEnemy(EnemyType type) {
+            for (EnemyChipDrop d : values()) {
+                if (d.enemyType == type) return d;
+            }
+            return null;
+        }
+    }
+}

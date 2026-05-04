@@ -14,7 +14,7 @@ public final class PlayerContext {
     public static final float ATTACK_RANGE  = 1.5f;
     public static final float JUMP_VELOCITY = 12f;
     public static final float GRAVITY       = -25f;
-    public static final float GROUND_Y      = 0.5f;   // half-sprite above world floor
+    public static final float GROUND_Y      = 0.5f;   
 
     private final Vector2 position = new Vector2();
     private final Vector2 velocity = new Vector2();

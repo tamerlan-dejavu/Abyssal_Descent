@@ -47,4 +47,5 @@ public final class ChipPickupSystem {
     public void dispose() {
         eventBus.unsubscribe(ChipPickupEvent.class, pickupListener);
     }
+
 }
