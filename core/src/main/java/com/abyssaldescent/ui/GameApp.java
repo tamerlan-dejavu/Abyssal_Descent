@@ -48,9 +48,10 @@ import java.util.Map;
 
 public class GameApp extends ApplicationAdapter {
 
-    // All rooms are 16×10 world units → maps to 2880×1800 px at the window scale
-    private static final float ROOM_W         = 16f;
+    // World height is fixed at 10 units; width is computed from the actual screen aspect ratio
+    // so the background always fills the entire screen without letterboxing.
     private static final float ROOM_H         = 10f;
+    private static float ROOM_W               = 16f; // updated in create() and resize()
     // Solid wall band thickness (world units) — no entity enters this zone
     private static final float WALL_T         = 0.6f;
     // Width of the passable gap cut in a wall where a door exists
@@ -104,6 +105,7 @@ public class GameApp extends ApplicationAdapter {
 
         camera   = new OrthographicCamera();
         uiCamera = new OrthographicCamera();
+        ROOM_W = ROOM_H * Gdx.graphics.getWidth() / (float) Gdx.graphics.getHeight();
         uiCamera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         uiCamera.update();
 
@@ -522,6 +524,7 @@ public class GameApp extends ApplicationAdapter {
     @Override
     public void resize(int width, int height) {
         if (height == 0) return;
+        ROOM_W = ROOM_H * width / (float) height;
         uiCamera.setToOrtho(false, width, height);
         uiCamera.update();
         Room room = roomManager.getCurrentRoom();
