@@ -254,6 +254,9 @@ public class GameApp extends ApplicationAdapter {
         clampEnemies(roomW);
 
         // ── Clear ─────────────────────────────────────────────────────────────
+        int sw = Gdx.graphics.getWidth();
+        int sh = Gdx.graphics.getHeight();
+        Gdx.gl.glViewport(0, 0, sw, sh);
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
