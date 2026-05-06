@@ -1,0 +1,88 @@
+package com.abyssaldescent.ui.feedback;
+
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.GameEvent;
+
+import java.util.ArrayList;
+import java.util.List;
+
+
+public class DamageNumberPool {
+
+    private static final int POOL_SIZE = 30;
+
+    private final List<DamageNumber> pool = new ArrayList<>(POOL_SIZE);
+    private final BitmapFont fontNormal;
+    private final BitmapFont fontCrit;
+
+
+    public DamageNumberPool(EventBus eventBus) {
+        // Предзаполнить пул
+        for (int i = 0; i < POOL_SIZE; i++) {
+            pool.add(new DamageNumber());
+        }
+
+        // Шрифты
+        fontNormal = new BitmapFont();
+        fontNormal.getData().setScale(1.1f);
+
+        fontCrit = new BitmapFont();
+        fontCrit.getData().setScale(1.6f);
+
+        eventBus.subscribe(GameEvent.Type.PLAYER_DAMAGED, event -> {
+            var info = (com.abyssaldescent.entity.PlayerStats.DamageInfo) event.getPayload();
+            spawn(info.worldX(), info.worldY(), info.amount(), DamageNumber.Kind.DAMAGE);
+        });
+
+        eventBus.subscribe(GameEvent.Type.ENEMY_DAMAGED, event -> {
+            var info = (EnemyDamageInfo) event.getPayload();
+            DamageNumber.Kind kind = info.isCrit()
+                    ? DamageNumber.Kind.CRIT
+                    : DamageNumber.Kind.DAMAGE;
+            spawn(info.worldX(), info.worldY(), info.amount(), kind);
+        });
+
+        eventBus.subscribe(GameEvent.Type.PLAYER_HEALED, event -> {
+            var info = (com.abyssaldescent.entity.PlayerStats.DamageInfo) event.getPayload();
+            spawn(info.worldX(), info.worldY(), info.amount(), DamageNumber.Kind.HEAL);
+        });
+    }
+
+
+    public void update(float delta) {
+        for (DamageNumber dn : pool) {
+            dn.update(delta);
+        }
+    }
+
+    /** Вызывать между batch.begin() / batch.end(). */
+    public void render(SpriteBatch batch) {
+        for (DamageNumber dn : pool) {
+            dn.render(batch, fontNormal, fontCrit);
+        }
+    }
+
+    public void dispose() {
+        fontNormal.dispose();
+        fontCrit.dispose();
+    }
+
+    // ── Private ───────────────────────────────────────────────────────────────
+
+    private void spawn(float x, float y, int amount, DamageNumber.Kind kind) {
+        // Найти свободный объект из пула
+        for (DamageNumber dn : pool) {
+            if (!dn.isActive()) {
+                dn.init(x, y + 20f, amount, kind);   // +20 чтобы появлялся над спрайтом
+                return;
+            }
+        }
+        // Пул полон — пропустить (редко, при 30+ одновременных ударах)
+    }
+
+    // ── Data record для события ENEMY_DAMAGED ─────────────────────────────────
+
+    public record EnemyDamageInfo(float worldX, float worldY, int amount, boolean isCrit) {}
+}
