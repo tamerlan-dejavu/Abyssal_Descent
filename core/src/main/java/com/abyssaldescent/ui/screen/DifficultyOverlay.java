@@ -46,7 +46,7 @@ class DifficultyOverlay extends MenuOverlay {
 
     static final float BTN_W    = 500f;
     static final float BTN_H    = 150f;
-    static final float BTN_GAP  = 110f;  // 50 px wider gap on each side vs original
+    static final float BTN_GAP  = 260f;  // 150 px added
     static final float MARGIN   = 40f;
 
     private final Texture easyIdle,   easyGlow;
