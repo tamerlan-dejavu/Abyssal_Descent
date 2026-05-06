@@ -10,4 +10,5 @@ public abstract class GameEvent {
     public long getTimestamp() {
         return timestamp;
     }
+    
 }
