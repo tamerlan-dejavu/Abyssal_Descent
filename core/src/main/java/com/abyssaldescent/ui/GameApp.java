@@ -10,6 +10,8 @@ import com.abyssaldescent.entity.player.Player;
 import com.abyssaldescent.entity.player.PlayerContext;
 import com.abyssaldescent.entity.player.PlayerInputHandler;
 import com.abyssaldescent.entity.state.AttackingState;
+import com.abyssaldescent.combat.chips.ChipInventory;
+import com.abyssaldescent.combat.chips.ChipPickupSystem;
 import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.render.CameraController;
 import com.abyssaldescent.ui.hud.HudRenderer;
@@ -53,7 +55,9 @@ public class GameApp extends ApplicationAdapter {
     private final Map<String, SpriteOrientation> enemyOrientations = new HashMap<>();
     private final Map<String, Float> enemyLastX = new HashMap<>();
     private final MusicPlayer musicPlayer = new MusicPlayer();
-    private HudRenderer hudRenderer;
+    private HudRenderer      hudRenderer;
+    private ChipInventory    chipInventory;
+    private ChipPickupSystem chipPickupSystem;
 
     @Override
     public void create() {
@@ -94,7 +98,11 @@ public class GameApp extends ApplicationAdapter {
         musicPlayer.start();
         spawnDemoEnemies();
 
-        hudRenderer = new HudRenderer();
+        chipInventory    = new ChipInventory();
+        chipPickupSystem = new ChipPickupSystem(
+                chipInventory, combatManager,
+                EventBus.getInstance(), player.getCombatStrategy());
+        hudRenderer = new HudRenderer(chipInventory);
     }
 
     private Texture loadTextureOrPlaceholder(String path, Color fallbackColor) {
@@ -302,6 +310,7 @@ public class GameApp extends ApplicationAdapter {
         if (enemySprites != null) enemySprites.dispose();
         musicPlayer.dispose();
         if (combatManager != null) combatManager.dispose();
+        if (chipPickupSystem != null) chipPickupSystem.dispose();
         if (hudRenderer != null) hudRenderer.dispose();
     }
 

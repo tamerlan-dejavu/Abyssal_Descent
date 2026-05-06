@@ -1,5 +1,6 @@
 package com.abyssaldescent.ui.hud;
 
+import com.abyssaldescent.combat.chips.ChipInventory;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -14,15 +15,25 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
  */
 public final class HudRenderer {
 
-    private final OrthographicCamera hudCamera;
-    private final BitmapFont         fontMedium;
-    private final HealthBarWidget    healthBar;
+    private final OrthographicCamera  hudCamera;
+    private final BitmapFont          fontMedium;
+    private final BitmapFont          fontSmall;
+    private final HealthBarWidget     healthBar;
+    private final HudChipSlotWidget   chipSlots;
 
-    public HudRenderer() {
+    public HudRenderer(ChipInventory chipInventory) {
         hudCamera  = new OrthographicCamera();
+
         fontMedium = new BitmapFont();
         fontMedium.getData().setScale(1.6f);
-        healthBar  = new HealthBarWidget(fontMedium);
+
+        fontSmall  = new BitmapFont();
+        fontSmall.getData().setScale(0.9f);
+
+        healthBar = new HealthBarWidget(fontMedium);
+        chipSlots = new HudChipSlotWidget(fontSmall);
+        chipInventory.addObserver(chipSlots);
+
         updateCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
@@ -36,7 +47,9 @@ public final class HudRenderer {
     }
 
     public void render(SpriteBatch batch, ShapeRenderer shapes, float dt) {
+        float sw = hudCamera.viewportWidth;
         float sh = hudCamera.viewportHeight;
+
         healthBar.syncFromGameState();
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
@@ -44,17 +57,26 @@ public final class HudRenderer {
         shapes.setProjectionMatrix(hudCamera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         healthBar.renderShapes(shapes, 20f, sh - 60f);
+        chipSlots.renderShapes(shapes, sw, sh);
         shapes.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
         healthBar.renderText(batch, 20f, sh - 60f);
+        chipSlots.renderText(batch, sw, sh);
         batch.end();
+    }
+
+    /** Trigger an on-demand chip in the given 0-based slot (keys 1–4). */
+    public void activateChipSlot(int slot) {
+        chipSlots.activateSlot(slot);
     }
 
     public void dispose() {
         fontMedium.dispose();
+        fontSmall.dispose();
         healthBar.dispose();
+        chipSlots.dispose();
     }
 }
