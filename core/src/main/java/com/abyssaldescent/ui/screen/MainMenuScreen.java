@@ -226,25 +226,33 @@ public class MainMenuScreen implements Screen {
         MenuOverlay ov = activeOverlay == Overlay.SETTINGS ? settingsOverlay : difficultyOverlay;
         ov.update(mx, my);
 
-        // Phase 1: blurred background
-        if (blurRegion == null) captureBlur(sw, sh);
-
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-        batch.begin();
-        batch.draw(blurRegion, 0, 0, sw, sh);
-        batch.end();
+
+        // Phase 1: background
+        // Settings → blurred (focus effect). Difficulty → clear (logo stays visible above panel).
+        if (activeOverlay == Overlay.SETTINGS) {
+            if (blurRegion == null) captureBlur(sw, sh);
+            batch.begin();
+            batch.draw(blurRegion, 0, 0, sw, sh);
+            batch.end();
+        } else {
+            batch.begin();
+            batch.draw(background, 0, 0, sw, sh);
+            batch.end();
+        }
 
         // Phase 2: dim + fallback panel bg
+        float dimAlpha = (activeOverlay == Overlay.SETTINGS) ? 0.60f : 0.35f;
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(0f, 0f, 0f, 0.60f);
+        shapes.setColor(0f, 0f, 0f, dimAlpha);
         shapes.rect(0, 0, sw, sh);
         ov.renderFallbackBackground(shapes);
         shapes.end();
 
-        // Phase 3: panel texture
+        // Phase 3: panel texture (difficulty_bg.png or settings_panel.png)
         batch.begin();
         ov.renderPanelTexture(batch);
         batch.end();
@@ -357,11 +365,16 @@ public class MainMenuScreen implements Screen {
 
         buttons = Arrays.asList(newGameBtn, continueBtn, settingsBtn, exitBtn);
 
-        // Overlay panel — centred on screen
         float panelX = (sw - PANEL_W) / 2f;
-        float panelY = (sh - PANEL_H) / 2f;
-        settingsOverlay.rebuildLayout(panelX, panelY, PANEL_W, PANEL_H);
-        difficultyOverlay.rebuildLayout(panelX, panelY, PANEL_W, PANEL_H);
+
+        // Settings panel — centred vertically (full-focus style)
+        float settingsPanelY = (sh - PANEL_H) / 2f;
+        settingsOverlay.rebuildLayout(panelX, settingsPanelY, PANEL_W, PANEL_H);
+
+        // Difficulty panel — shifted down ~300 px so the game logo above stays visible.
+        // Clamped so the Back button (panelY+30) is never off-screen.
+        float diffPanelY = Math.max(20f, (sh - PANEL_H) / 2f - 300f);
+        difficultyOverlay.rebuildLayout(panelX, diffPanelY, PANEL_W, PANEL_H);
     }
 
     // ── asset loading ─────────────────────────────────────────────────────────
@@ -380,14 +393,18 @@ public class MainMenuScreen implements Screen {
         exitOn       = ScreenAssets.loadTexture("ui/buttons/exit_on.png");
         creditsTex   = ScreenAssets.loadTexture("ui/credits/credits.png");
 
-        settingsPanelTex    = ScreenAssets.loadTexture("ui/overlays/settings_panel.png");
-        difficultyPanelTex  = ScreenAssets.loadTexture("ui/overlays/difficulty_panel.png");
-        easyOff    = ScreenAssets.loadTexture("ui/overlays/easy_off.png");
-        easyOn     = ScreenAssets.loadTexture("ui/overlays/easy_on.png");
-        normalOff  = ScreenAssets.loadTexture("ui/overlays/normal_off.png");
-        normalOn   = ScreenAssets.loadTexture("ui/overlays/normal_on.png");
-        hardOff    = ScreenAssets.loadTexture("ui/overlays/hard_off.png");
-        hardOn     = ScreenAssets.loadTexture("ui/overlays/hard_on.png");
+        settingsPanelTex   = ScreenAssets.loadTexture("ui/overlays/settings_panel.png");
+        // Accepts either "difficulty_bg.png" (preferred) or "difficulty_panel.png"
+        difficultyPanelTex = firstOf("ui/overlays/difficulty_bg.png",
+                                     "ui/overlays/difficulty_panel.png");
+
+        // Difficulty buttons — supports _idle/_glow naming (preferred) with _off/_on fallback
+        easyOff   = firstOf("ui/overlays/easy_idle.png",   "ui/overlays/easy_off.png");
+        easyOn    = firstOf("ui/overlays/easy_glow.png",   "ui/overlays/easy_on.png");
+        normalOff = firstOf("ui/overlays/normal_idle.png", "ui/overlays/normal_off.png");
+        normalOn  = firstOf("ui/overlays/normal_glow.png", "ui/overlays/normal_on.png");
+        hardOff   = firstOf("ui/overlays/hard_idle.png",   "ui/overlays/hard_off.png");
+        hardOn    = firstOf("ui/overlays/hard_glow.png",   "ui/overlays/hard_on.png");
     }
 
     private void disposeTextures() {
@@ -424,6 +441,15 @@ public class MainMenuScreen implements Screen {
         } catch (Exception e) {
             Gdx.app.error("MainMenuScreen", "Failed to load bg music", e);
         }
+    }
+
+    /** Returns the first path that exists as a loadable texture, or {@code null}. */
+    private static Texture firstOf(String... paths) {
+        for (String p : paths) {
+            Texture t = ScreenAssets.loadTexture(p);
+            if (t != null) return t;
+        }
+        return null;
     }
 
     private boolean hasSaveGame() {
