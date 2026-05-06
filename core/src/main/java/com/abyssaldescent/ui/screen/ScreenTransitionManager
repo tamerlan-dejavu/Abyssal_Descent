@@ -1,0 +1,29 @@
+package com.abyssaldescent.ui.screen;
+
+import com.abyssaldescent.AbyssalDescentGame;
+import com.abyssaldescent.core.save.RunStats;
+import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.GameEvent;
+
+public class ScreenTransitionManager {
+
+    private final AbyssalDescentGame game;
+    private final RunStats           stats;
+
+    public ScreenTransitionManager(AbyssalDescentGame game,
+                                   RunStats stats,
+                                   EventBus eventBus) {
+        this.game  = game;
+        this.stats = stats;
+
+       
+        eventBus.subscribe(GameEvent.Type.GAME_OVER, event -> {
+            game.setScreen(new GameOverScreen(game, stats));
+        });
+
+        
+        eventBus.subscribe(GameEvent.Type.BOSS_DEFEATED, event -> {
+            game.setScreen(new EndingScreen(game, stats));
+        });
+    }
+}
