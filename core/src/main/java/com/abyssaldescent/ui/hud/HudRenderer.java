@@ -15,11 +15,14 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
  */
 public final class HudRenderer {
 
-    private final OrthographicCamera  hudCamera;
-    private final BitmapFont          fontMedium;
-    private final BitmapFont          fontSmall;
-    private final HealthBarWidget     healthBar;
-    private final HudChipSlotWidget   chipSlots;
+    private final OrthographicCamera   hudCamera;
+    private final BitmapFont           fontMedium;
+    private final BitmapFont           fontSmall;
+    private final HealthBarWidget      healthBar;
+    private final HudChipSlotWidget    chipSlots;
+    private final KeyCounterWidget     keyCounter;
+    private final RespawnCounterWidget respawnCounter;
+    private final LevelIndicator       levelIndicator;
 
     public HudRenderer(ChipInventory chipInventory) {
         hudCamera  = new OrthographicCamera();
@@ -30,9 +33,12 @@ public final class HudRenderer {
         fontSmall  = new BitmapFont();
         fontSmall.getData().setScale(0.9f);
 
-        healthBar = new HealthBarWidget(fontMedium);
-        chipSlots = new HudChipSlotWidget(fontSmall);
+        healthBar      = new HealthBarWidget(fontMedium);
+        chipSlots      = new HudChipSlotWidget(fontSmall);
         chipInventory.addObserver(chipSlots);
+        keyCounter     = new KeyCounterWidget(fontMedium);
+        respawnCounter = new RespawnCounterWidget(fontMedium);
+        levelIndicator = new LevelIndicator(fontMedium);
 
         updateCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
@@ -52,19 +58,31 @@ public final class HudRenderer {
 
         healthBar.syncFromGameState();
 
+        // ── shape pass (backgrounds, bars, icons) ────────────────────────────
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         shapes.setProjectionMatrix(hudCamera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
+
         healthBar.renderShapes(shapes, 20f, sh - 60f);
+        levelIndicator.renderShapes(shapes, sw / 2f - LevelIndicator.W / 2f, sh - 60f);
+        keyCounter.renderShapes(shapes, sw - KeyCounterWidget.W - 20f, sh - 60f);
+        respawnCounter.renderShapes(shapes, sw - 220f, sh - 110f);
         chipSlots.renderShapes(shapes, sw, sh);
+
         shapes.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
+        // ── text pass ────────────────────────────────────────────────────────
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
+
         healthBar.renderText(batch, 20f, sh - 60f);
+        levelIndicator.renderText(batch, sw / 2f - LevelIndicator.W / 2f, sh - 60f);
+        keyCounter.renderText(batch, sw - KeyCounterWidget.W - 20f, sh - 60f);
+        respawnCounter.renderText(batch, sw - 220f, sh - 110f);
         chipSlots.renderText(batch, sw, sh);
+
         batch.end();
     }
 
@@ -78,5 +96,8 @@ public final class HudRenderer {
         fontSmall.dispose();
         healthBar.dispose();
         chipSlots.dispose();
+        keyCounter.dispose();
+        respawnCounter.dispose();
+        levelIndicator.dispose();
     }
 }

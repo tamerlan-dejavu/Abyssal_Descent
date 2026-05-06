@@ -13,6 +13,8 @@ import com.abyssaldescent.entity.state.AttackingState;
 import com.abyssaldescent.combat.chips.ChipInventory;
 import com.abyssaldescent.combat.chips.ChipPickupSystem;
 import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.KeyPickedUpEvent;
+import com.abyssaldescent.event.RespawnUsedEvent;
 import com.abyssaldescent.render.CameraController;
 import com.abyssaldescent.ui.hud.HudRenderer;
 import com.abyssaldescent.render.EnemySpriteRegistry;
@@ -58,6 +60,8 @@ public class GameApp extends ApplicationAdapter {
     private HudRenderer      hudRenderer;
     private ChipInventory    chipInventory;
     private ChipPickupSystem chipPickupSystem;
+    private int              demoKeys       = 0;
+    private int              demoRespawns   = 3;
 
     @Override
     public void create() {
@@ -186,7 +190,20 @@ public class GameApp extends ApplicationAdapter {
         shapes.setProjectionMatrix(cameraController.getCamera().combined);
         renderEnemies();
 
+        fireDemoEvents();
         hudRenderer.render(batch, shapes, dt);
+    }
+
+    /** Demo: K = pick up a key, R = use a respawn. */
+    private void fireDemoEvents() {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
+            demoKeys = Math.min(demoKeys + 1, 1);
+            EventBus.getInstance().post(new KeyPickedUpEvent(demoKeys, 1));
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            demoRespawns = Math.max(demoRespawns - 1, 0);
+            EventBus.getInstance().post(new RespawnUsedEvent(demoRespawns, 3));
+        }
     }
 
     private void drawFloorTiles() {
