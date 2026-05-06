@@ -412,12 +412,8 @@ public class MainMenuScreen implements Screen {
 
         buttons = Arrays.asList(newGameBtn, continueBtn, settingsBtn, exitBtn);
 
-        // Settings panel — centred on screen
-        float panelX = (sw - PANEL_W) / 2f;
-        float panelY = (sh - PANEL_H) / 2f;
-        settingsOverlay.rebuildLayout(panelX, panelY, PANEL_W, PANEL_H);
-
-        // Difficulty overlay — full screen (buttons positioned relative to sw/sh)
+        // Both overlays are full-screen; each positions its own content internally
+        settingsOverlay.rebuildLayout(0, 0, sw, sh);
         difficultyOverlay.rebuildLayout(0, 0, sw, sh);
     }
 
