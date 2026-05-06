@@ -1,39 +1,46 @@
-Overlay panel textures for Settings and Difficulty screens
-===========================================================
+Overlay assets for Settings and Difficulty screens
+====================================================
 
-SETTINGS OVERLAY
------------------
-Appears centred on screen with blurred background.
+════════════════════════════════════════════════════════════
+  SETTINGS OVERLAY
+════════════════════════════════════════════════════════════
+Centred on screen, blurred background.
 
-  settings_panel.png          — 1800×900 px panel background (optional)
-                                Fallback: dark purple rectangle with border.
+  settings_panel.png        — panel background, 1800×900 px (optional)
+                              Fallback: dark purple rectangle with border.
 
-DIFFICULTY OVERLAY
-------------------
-Appears in the LOWER part of the screen (shifted ~300 px below centre) so the
-game logo above it stays fully visible. Background is NOT blurred.
+════════════════════════════════════════════════════════════
+  DIFFICULTY OVERLAY  (full-screen)
+════════════════════════════════════════════════════════════
+Covers the entire window.  No blur — game logo is NOT visible during
+difficulty selection (it's a separate full-screen state).
 
-  difficulty_bg.png           — 1800×900 px panel background (preferred name)
-  difficulty_panel.png        — same, alternative name (fallback if _bg not found)
+BACKGROUND
+  difficulty_bg.png         — full-screen background, e.g. 2880×1800 px
+                              Also tries: difficulty_panel.png
+                              Fallback: dark blue overlay over main menu bg.
 
-DIFFICULTY BUTTONS  (500×150 px PNG, placed horizontally inside the panel)
-  Preferred naming (_idle / _glow):
-    easy_idle.png   easy_glow.png     — Easy   button idle / hover-glow
-    normal_idle.png normal_glow.png   — Normal button idle / hover-glow
-    hard_idle.png   hard_glow.png     — Hard   button idle / hover-glow
+DIFFICULTY BUTTONS  — 500 × 150 px each
+  Layout: horizontal row, centred, at 42 % screen height.
 
-  Legacy naming (_off / _on) is also accepted as a fallback:
-    easy_off.png    easy_on.png
-    normal_off.png  normal_on.png
-    hard_off.png    hard_on.png
+  easy_idle.png   easy_glow.png       ← Easy   (idle / active-hover)
+  normal_idle.png normal_glow.png     ← Normal (idle / active-hover)
+  hard_idle.png   hard_glow.png       ← Hard   (idle / active-hover)
 
-  The engine tries _idle/_glow first; if absent it tries _off/_on.
-  If neither exists the button renders as a styled shape (no texture needed).
+  Legacy fallback names also accepted:
+    easy_off.png / easy_on.png
+    normal_off.png / normal_on.png
+    hard_off.png   / hard_on.png
 
-All files are optional — the engine gracefully draws a fallback panel and
-shape-rendered buttons when any texture is missing.
+BACK BUTTON  — 500 × 150 px
+  Position: bottom-RIGHT corner, 40 px margin from screen edges.
 
-LAYOUT REFERENCE  (panel coordinate origin = bottom-left of panel)
-  Difficulty buttons  : centred horizontally, ~42 % panel height from bottom
-  Back button         : bottom-left corner (30 px offset)
-  Settings sliders    : top ~72 % of panel, descending every 80 px
+  back_idle.png   back_glow.png       ← Back   (idle / active-hover)
+  Fallback: back_off.png / back_on.png
+
+════════════════════════════════════════════════════════════
+  RULES
+════════════════════════════════════════════════════════════
+• _idle / _glow are checked first; _off / _on used as fallback.
+• Any missing texture → shape-rendered button (no crash).
+• All textures are loaded once on screen show() and disposed on dispose().

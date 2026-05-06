@@ -77,12 +77,15 @@ public class MainMenuScreen implements Screen {
     // music
     private Music bgMusic;
 
-    // textures — overlays
+    // textures — settings overlay
     private Texture settingsPanelTex;
-    private Texture difficultyPanelTex;
-    private Texture easyOff, easyOn;
-    private Texture normalOff, normalOn;
-    private Texture hardOff, hardOn;
+
+    // textures — difficulty overlay (full-screen)
+    private Texture difficultyBgTex;           // full-screen background
+    private Texture easyOff,   easyOn;         // Easy   idle / glow
+    private Texture normalOff, normalOn;       // Normal idle / glow
+    private Texture hardOff,   hardOn;         // Hard   idle / glow
+    private Texture diffBackOff, diffBackOn;   // Back   idle / glow
 
     // main menu buttons
     private List<MenuButton> buttons;
@@ -110,8 +113,11 @@ public class MainMenuScreen implements Screen {
         startMusic();
 
         settingsOverlay   = new SettingsOverlay(settingsPanelTex, this::closeOverlay);
-        difficultyOverlay = new DifficultyOverlay(difficultyPanelTex,
-                easyOff, easyOn, normalOff, normalOn, hardOff, hardOn,
+        difficultyOverlay = new DifficultyOverlay(difficultyBgTex,
+                easyOff,    easyOn,
+                normalOff,  normalOn,
+                hardOff,    hardOn,
+                diffBackOff, diffBackOn,
                 this::closeOverlay);
 
         buildLayout();
@@ -220,53 +226,94 @@ public class MainMenuScreen implements Screen {
         batch.end();
     }
 
-    // ── overlay render (5-phase pipeline) ────────────────────────────────────
+    // ── overlay render ────────────────────────────────────────────────────────
 
     private void renderOverlay(int sw, int sh, float mx, float my) {
-        MenuOverlay ov = activeOverlay == Overlay.SETTINGS ? settingsOverlay : difficultyOverlay;
-        ov.update(mx, my);
+        if (activeOverlay == Overlay.SETTINGS) {
+            renderSettingsOverlay(sw, sh, mx, my);
+        } else {
+            renderDifficultyOverlay(sw, sh, mx, my);
+        }
+    }
+
+    /**
+     * Settings overlay: blurred background → dark dim → panel → sliders → labels.
+     */
+    private void renderSettingsOverlay(int sw, int sh, float mx, float my) {
+        settingsOverlay.update(mx, my);
+
+        if (blurRegion == null) captureBlur(sw, sh);
 
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Phase 1: background
-        // Settings → blurred (focus effect). Difficulty → clear (logo stays visible above panel).
-        if (activeOverlay == Overlay.SETTINGS) {
-            if (blurRegion == null) captureBlur(sw, sh);
-            batch.begin();
-            batch.draw(blurRegion, 0, 0, sw, sh);
-            batch.end();
-        } else {
-            batch.begin();
-            batch.draw(background, 0, 0, sw, sh);
-            batch.end();
-        }
+        batch.begin();
+        batch.draw(blurRegion, 0, 0, sw, sh);
+        batch.end();
 
-        // Phase 2: dim + fallback panel bg
-        float dimAlpha = (activeOverlay == Overlay.SETTINGS) ? 0.60f : 0.35f;
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(0f, 0f, 0f, dimAlpha);
+        shapes.setColor(0f, 0f, 0f, 0.60f);
         shapes.rect(0, 0, sw, sh);
-        ov.renderFallbackBackground(shapes);
+        settingsOverlay.renderFallbackBackground(shapes);
         shapes.end();
 
-        // Phase 3: panel texture (difficulty_bg.png or settings_panel.png)
         batch.begin();
-        ov.renderPanelTexture(batch);
+        settingsOverlay.renderPanelTexture(batch);
         batch.end();
 
-        // Phase 4: interactive shapes (sliders, button fills/borders)
         shapes.begin(ShapeRenderer.ShapeType.Filled);
-        ov.renderInteractiveShapes(shapes);
+        settingsOverlay.renderInteractiveShapes(shapes);
         shapes.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // Phase 5: text labels + button labels
         batch.begin();
         font.getData().setScale(3f);
-        ov.renderLabels(batch, font);
+        settingsOverlay.renderLabels(batch, font);
+        batch.end();
+    }
+
+    /**
+     * Difficulty overlay: full-screen background → buttons.
+     * No blur — the menu logo above remains visible.
+     */
+    private void renderDifficultyOverlay(int sw, int sh, float mx, float my) {
+        difficultyOverlay.update(mx, my);
+
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
+        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        // Full-screen background: custom texture → fallback to dark main-menu bg
+        batch.begin();
+        if (difficultyBgTex != null) {
+            batch.draw(difficultyBgTex, 0, 0, sw, sh);
+        } else {
+            batch.draw(background, 0, 0, sw, sh);
+            batch.end();
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            shapes.begin(ShapeRenderer.ShapeType.Filled);
+            shapes.setColor(0f, 0f, 0.08f, 0.82f);
+            shapes.rect(0, 0, sw, sh);
+            shapes.end();
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+            batch.begin();
+        }
+        batch.end();
+
+        // Button hover shapes (borders)
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        difficultyOverlay.renderInteractiveShapes(shapes);
+        shapes.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+
+        // Button textures + labels
+        batch.begin();
+        font.getData().setScale(3f);
+        difficultyOverlay.renderLabels(batch, font);
         batch.end();
     }
 
@@ -365,16 +412,13 @@ public class MainMenuScreen implements Screen {
 
         buttons = Arrays.asList(newGameBtn, continueBtn, settingsBtn, exitBtn);
 
+        // Settings panel — centred on screen
         float panelX = (sw - PANEL_W) / 2f;
+        float panelY = (sh - PANEL_H) / 2f;
+        settingsOverlay.rebuildLayout(panelX, panelY, PANEL_W, PANEL_H);
 
-        // Settings panel — centred vertically (full-focus style)
-        float settingsPanelY = (sh - PANEL_H) / 2f;
-        settingsOverlay.rebuildLayout(panelX, settingsPanelY, PANEL_W, PANEL_H);
-
-        // Difficulty panel — shifted down ~300 px so the game logo above stays visible.
-        // Clamped so the Back button (panelY+30) is never off-screen.
-        float diffPanelY = Math.max(20f, (sh - PANEL_H) / 2f - 300f);
-        difficultyOverlay.rebuildLayout(panelX, diffPanelY, PANEL_W, PANEL_H);
+        // Difficulty overlay — full screen (buttons positioned relative to sw/sh)
+        difficultyOverlay.rebuildLayout(0, 0, sw, sh);
     }
 
     // ── asset loading ─────────────────────────────────────────────────────────
@@ -393,18 +437,23 @@ public class MainMenuScreen implements Screen {
         exitOn       = ScreenAssets.loadTexture("ui/buttons/exit_on.png");
         creditsTex   = ScreenAssets.loadTexture("ui/credits/credits.png");
 
-        settingsPanelTex   = ScreenAssets.loadTexture("ui/overlays/settings_panel.png");
-        // Accepts either "difficulty_bg.png" (preferred) or "difficulty_panel.png"
-        difficultyPanelTex = firstOf("ui/overlays/difficulty_bg.png",
-                                     "ui/overlays/difficulty_panel.png");
+        settingsPanelTex = ScreenAssets.loadTexture("ui/overlays/settings_panel.png");
 
-        // Difficulty buttons — supports _idle/_glow naming (preferred) with _off/_on fallback
-        easyOff   = firstOf("ui/overlays/easy_idle.png",   "ui/overlays/easy_off.png");
-        easyOn    = firstOf("ui/overlays/easy_glow.png",   "ui/overlays/easy_on.png");
-        normalOff = firstOf("ui/overlays/normal_idle.png", "ui/overlays/normal_off.png");
-        normalOn  = firstOf("ui/overlays/normal_glow.png", "ui/overlays/normal_on.png");
-        hardOff   = firstOf("ui/overlays/hard_idle.png",   "ui/overlays/hard_off.png");
-        hardOn    = firstOf("ui/overlays/hard_glow.png",   "ui/overlays/hard_on.png");
+        // Difficulty: full-screen background
+        difficultyBgTex = firstOf("ui/overlays/difficulty_bg.png",
+                                  "ui/overlays/difficulty_panel.png");
+
+        // Difficulty buttons 500×150 — _idle/_glow preferred, _off/_on as fallback
+        easyOff    = firstOf("ui/overlays/easy_idle.png",   "ui/overlays/easy_off.png");
+        easyOn     = firstOf("ui/overlays/easy_glow.png",   "ui/overlays/easy_on.png");
+        normalOff  = firstOf("ui/overlays/normal_idle.png", "ui/overlays/normal_off.png");
+        normalOn   = firstOf("ui/overlays/normal_glow.png", "ui/overlays/normal_on.png");
+        hardOff    = firstOf("ui/overlays/hard_idle.png",   "ui/overlays/hard_off.png");
+        hardOn     = firstOf("ui/overlays/hard_glow.png",   "ui/overlays/hard_on.png");
+
+        // Back button 500×150 — bottom-right corner of difficulty screen
+        diffBackOff = firstOf("ui/overlays/back_idle.png", "ui/overlays/back_off.png");
+        diffBackOn  = firstOf("ui/overlays/back_glow.png", "ui/overlays/back_on.png");
     }
 
     private void disposeTextures() {
@@ -418,14 +467,16 @@ public class MainMenuScreen implements Screen {
         if (exitOff         != null) exitOff.dispose();
         if (exitOn          != null) exitOn.dispose();
         if (creditsTex      != null) creditsTex.dispose();
-        if (settingsPanelTex   != null) settingsPanelTex.dispose();
-        if (difficultyPanelTex != null) difficultyPanelTex.dispose();
-        if (easyOff   != null) easyOff.dispose();
-        if (easyOn    != null) easyOn.dispose();
-        if (normalOff != null) normalOff.dispose();
-        if (normalOn  != null) normalOn.dispose();
-        if (hardOff   != null) hardOff.dispose();
-        if (hardOn    != null) hardOn.dispose();
+        if (settingsPanelTex != null) settingsPanelTex.dispose();
+        if (difficultyBgTex  != null) difficultyBgTex.dispose();
+        if (easyOff      != null) easyOff.dispose();
+        if (easyOn       != null) easyOn.dispose();
+        if (normalOff    != null) normalOff.dispose();
+        if (normalOn     != null) normalOn.dispose();
+        if (hardOff      != null) hardOff.dispose();
+        if (hardOn       != null) hardOn.dispose();
+        if (diffBackOff  != null) diffBackOff.dispose();
+        if (diffBackOn   != null) diffBackOn.dispose();
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
