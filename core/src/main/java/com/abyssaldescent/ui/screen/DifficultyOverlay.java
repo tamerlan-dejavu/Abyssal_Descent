@@ -46,7 +46,7 @@ class DifficultyOverlay extends MenuOverlay {
 
     static final float BTN_W    = 500f;
     static final float BTN_H    = 150f;
-    static final float BTN_GAP  = 60f;
+    static final float BTN_GAP  = 110f;  // 50 px wider gap on each side vs original
     static final float MARGIN   = 40f;
 
     private final Texture easyIdle,   easyGlow;
@@ -82,7 +82,7 @@ class DifficultyOverlay extends MenuOverlay {
         // ── Difficulty buttons — horizontal row, centred, at 42 % screen height ──
         float totalW = 3 * BTN_W + 2 * BTN_GAP;
         float startX = px + (pw - totalW) / 2f;
-        float btnY   = py + ph * 0.42f - BTN_H / 2f;
+        float btnY   = py + ph * 0.32f - BTN_H / 2f;  // lower: 32% from bottom
 
         MenuButton easyBtn = new MenuButton(
                 "Easy", startX, btnY, BTN_W, BTN_H,
@@ -159,15 +159,6 @@ class DifficultyOverlay extends MenuOverlay {
         backBtn.renderTexture(batch);
         backBtn.renderLabel(batch, font);
 
-        // Fallback title shown only when no background texture was loaded
-        if (panelTex == null) {
-            font.setColor(0.85f, 0.75f, 1f, 1f);
-            String title = "SELECT DIFFICULTY";
-            GlyphLayout gl = new GlyphLayout(font, title);
-            font.draw(batch, title,
-                    panelX + (panelW - gl.width) / 2f,
-                    panelY + panelH * 0.88f);
-        }
         font.getData().setScale(3f);
     }
 

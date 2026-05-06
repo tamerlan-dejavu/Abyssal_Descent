@@ -439,8 +439,9 @@ public class MainMenuScreen implements Screen {
 
         settingsPanelTex = ScreenAssets.loadTexture("ui/overlays/settings_panel.png");
 
-        // Difficulty: full-screen background
-        difficultyBgTex = firstOf("ui/overlays/difficulty_bg.png",
+        // Difficulty: full-screen background — check all known locations
+        difficultyBgTex = firstOf("ui/backgrounds/difficulty.png",
+                                  "ui/overlays/difficulty_bg.png",
                                   "ui/overlays/difficulty_panel.png");
 
         // Difficulty buttons 500×150 — _idle/_glow preferred, _off/_on as fallback
