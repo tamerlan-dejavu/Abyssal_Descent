@@ -1,38 +1,44 @@
 package com.abyssaldescent.ui.screen;
 
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 /**
- * Reusable pixel-rendered button for all menu screens.
+ * Reusable button for all menu screens.
  *
- * <p>Render order per frame:
- * <ol>
- *   <li>Call {@link #update(float, float)} with current mouse position (world Y-up coords).</li>
- *   <li>Inside an active {@link ShapeRenderer} Filled pass → call {@link #renderBackground(ShapeRenderer)}.</li>
- *   <li>Inside an active {@link SpriteBatch} pass → call {@link #renderLabel(SpriteBatch, BitmapFont)}.</li>
- * </ol>
- *
- * <p>Palette (GDD §UI):
+ * <p>Two rendering modes:
  * <ul>
- *   <li>Normal  bg  : #2a2a2a at 60 % alpha</li>
- *   <li>Hover   bg  : #3a3a3a at 80 % alpha + yellow border</li>
- *   <li>Disabled bg  : dimmed at 40 % alpha, grey text</li>
+ *   <li><b>Texture mode</b> — call {@link #setTextures} once after construction.
+ *       {@link #renderTexture} draws the sprite in the batch pass;
+ *       {@link #renderBackground} becomes a no-op (border still drawn via shapes).</li>
+ *   <li><b>Shape mode</b> (default) — {@link #renderBackground} draws a filled
+ *       rectangle + yellow hover border via ShapeRenderer.</li>
  * </ul>
+ *
+ * <p>Frame order:
+ * <ol>
+ *   <li>{@link #update(float, float)} — update hover state (Y-up world coords).</li>
+ *   <li>Shapes pass → {@link #renderBackground(ShapeRenderer)}.</li>
+ *   <li>Batch pass  → {@link #renderTexture(SpriteBatch)} then {@link #renderLabel}.</li>
+ * </ol>
  */
 public class MenuButton {
 
-    private static final float BORDER = 2f;
+    private static final float BORDER = 3f;
 
     private final String   label;
     private final float    x, y, width, height;
     private final Runnable onClickAction;
 
-    private boolean hovered  = false;
-    private boolean enabled  = true;
-    private float   alpha    = 1f;
+    private boolean hovered = false;
+    private boolean enabled = true;
+    private float   alpha   = 1f;
+
+    private Texture normalTexture;
+    private Texture hoverTexture;
 
     private final GlyphLayout glyphLayout = new GlyphLayout();
 
@@ -47,16 +53,29 @@ public class MenuButton {
     }
 
     /**
-     * Updates the hover state. Call every frame with screen-to-world converted coordinates
-     * (i.e. {@code mouseY = Gdx.graphics.getHeight() - Gdx.input.getY()}).
+     * Enables texture-based rendering.
+     * @param normal  texture for idle state (required)
+     * @param hover   texture for hovered state; {@code null} applies a yellow tint instead
+     */
+    public void setTextures(Texture normal, Texture hover) {
+        this.normalTexture = normal;
+        this.hoverTexture  = hover;
+    }
+
+    public boolean hasTextures() { return normalTexture != null; }
+
+    // ── per-frame update ──────────────────────────────────────────────────────
+
+    /**
+     * Updates hover state.
+     * Pass mouse coordinates in world-space Y-up: {@code mouseY = Gdx.graphics.getHeight() - Gdx.input.getY()}.
      */
     public void update(float mouseX, float mouseY) {
         hovered = enabled && contains(mouseX, mouseY);
     }
 
     /**
-     * Processes a click at the given world-space position.
-     * @return {@code true} if the click was consumed by this button.
+     * Processes a click. Returns {@code true} if consumed.
      */
     public boolean handleClick(float mouseX, float mouseY) {
         if (!enabled || !contains(mouseX, mouseY)) return false;
@@ -64,41 +83,65 @@ public class MenuButton {
         return true;
     }
 
+    // ── rendering ─────────────────────────────────────────────────────────────
+
     /**
-     * Shapes pass: filled background rectangle + yellow border rects when hovered.
+     * Shapes pass.
+     * In texture mode: draws only the yellow hover border.
+     * In shape mode: draws filled background + yellow hover border.
      * Must be called inside {@code shapes.begin(ShapeType.Filled)}.
      */
     public void renderBackground(ShapeRenderer shapes) {
         float a = alpha;
-        if (!enabled) {
-            shapes.setColor(0.15f, 0.15f, 0.15f, 0.40f * a);
-        } else if (hovered) {
-            shapes.setColor(0.227f, 0.227f, 0.227f, 0.80f * a); // #3a3a3a
-        } else {
-            shapes.setColor(0.165f, 0.165f, 0.165f, 0.60f * a); // #2a2a2a
+        if (!hasTextures()) {
+            if (!enabled) {
+                shapes.setColor(0.15f, 0.15f, 0.15f, 0.40f * a);
+            } else if (hovered) {
+                shapes.setColor(0.227f, 0.227f, 0.227f, 0.80f * a);
+            } else {
+                shapes.setColor(0.165f, 0.165f, 0.165f, 0.60f * a);
+            }
+            shapes.rect(x, y, width, height);
         }
-        shapes.rect(x, y, width, height);
 
         if (hovered && enabled) {
-            shapes.setColor(1f, 1f, 0f, a); // #FFFF00
-            shapes.rect(x,               y + height - BORDER, width,  BORDER); // top
-            shapes.rect(x,               y,                    width,  BORDER); // bottom
-            shapes.rect(x,               y,                    BORDER, height); // left
-            shapes.rect(x + width - BORDER, y,                BORDER, height); // right
+            shapes.setColor(1f, 1f, 0f, a);
+            shapes.rect(x,                  y + height - BORDER, width,  BORDER);
+            shapes.rect(x,                  y,                    width,  BORDER);
+            shapes.rect(x,                  y,                    BORDER, height);
+            shapes.rect(x + width - BORDER, y,                    BORDER, height);
         }
     }
 
     /**
-     * Batch pass: horizontally and vertically centred label text.
+     * Batch pass — draws the button texture (texture mode only, no-op otherwise).
+     * Must be called inside {@code batch.begin()}.
+     */
+    public void renderTexture(SpriteBatch batch) {
+        if (!hasTextures()) return;
+        Texture tex = (hovered && enabled && hoverTexture != null) ? hoverTexture : normalTexture;
+        if (!enabled) {
+            batch.setColor(0.5f, 0.5f, 0.5f, alpha);
+        } else if (hovered && hoverTexture == null) {
+            batch.setColor(1f, 0.92f, 0.5f, alpha); // warm yellow tint when no hover tex
+        } else {
+            batch.setColor(1f, 1f, 1f, alpha);
+        }
+        batch.draw(tex, x, y, width, height);
+        batch.setColor(1f, 1f, 1f, 1f);
+    }
+
+    /**
+     * Batch pass — draws the centred label.
      * Must be called inside {@code batch.begin()}.
      */
     public void renderLabel(SpriteBatch batch, BitmapFont font) {
         if (!enabled) {
-            font.setColor(0.502f, 0.502f, 0.502f, alpha); // #808080
+            font.setColor(0.502f, 0.502f, 0.502f, alpha);
         } else if (hovered) {
-            font.setColor(1f, 1f, 0f, alpha); // #FFFF00
+            font.setColor(1f, 1f, 0f, alpha);
         } else {
-            font.setColor(1f, 1f, 1f, alpha); // #FFFFFF
+            font.setColor(1f, 1f, 1f, alpha);
         }
         glyphLayout.setText(font, label);
         float tx = x + (width  - glyphLayout.width)  * 0.5f;
@@ -106,7 +149,7 @@ public class MenuButton {
         font.draw(batch, glyphLayout, tx, ty);
     }
 
-    // ── accessors ────────────────────────────────────────────────────────────
+    // ── accessors ─────────────────────────────────────────────────────────────
 
     public void    setEnabled(boolean enabled) { this.enabled = enabled; }
     public void    setAlpha(float alpha)       { this.alpha   = alpha;   }
