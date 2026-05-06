@@ -50,8 +50,8 @@ public class MainMenuScreen implements Screen {
     private static final float BTN_W          = 500f;
     private static final float BTN_H          = 150f;
     private static final float BTN_GAP        = 20f;
-    private static final float CREDITS_W      = 500f;
-    private static final float CREDITS_H      = 300f;
+    private static final float CREDITS_W      = 700f;
+    private static final float CREDITS_H      = 700f;
     private static final float CREDITS_MARGIN = 20f;
     private static final float PANEL_W        = 1800f;
     private static final float PANEL_H        = 900f;

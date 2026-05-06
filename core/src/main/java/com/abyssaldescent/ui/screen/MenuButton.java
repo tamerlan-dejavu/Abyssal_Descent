@@ -104,7 +104,8 @@ public class MenuButton {
             shapes.rect(x, y, width, height);
         }
 
-        if (hovered && enabled) {
+        // Yellow hover border only in shape mode — texture mode uses the _on texture
+        if (!hasTextures() && hovered && enabled) {
             shapes.setColor(1f, 1f, 0f, a);
             shapes.rect(x,                  y + height - BORDER, width,  BORDER);
             shapes.rect(x,                  y,                    width,  BORDER);
@@ -136,6 +137,7 @@ public class MenuButton {
      * Must be called inside {@code batch.begin()}.
      */
     public void renderLabel(SpriteBatch batch, BitmapFont font) {
+        if (hasTextures()) return; // text is baked into the texture
         if (!enabled) {
             font.setColor(0.502f, 0.502f, 0.502f, alpha);
         } else if (hovered) {
