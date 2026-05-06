@@ -2,6 +2,7 @@ package com.abyssaldescent.ui.screen;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -10,7 +11,6 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.Preferences;
 
 /**
  * Settings screen (GDD FR11 §2.2).
@@ -27,13 +27,13 @@ import com.badlogic.gdx.Preferences;
  */
 public class SettingsScreen implements Screen {
 
-    private static final String PREFS_NAME   = "abyssal_descent_settings";
-    private static final float  SLIDER_W     = 500f;
-    private static final float  SLIDER_H     = 12f;
-    private static final float  THUMB_R      = 12f;
-    private static final float  ROW_H        = 70f;
-    private static final float  LABEL_W      = 240f;
-    private static final int[]  FPS_OPTIONS  = {30, 60, 120};
+    private static final String PREFS_NAME  = "abyssal_descent_settings";
+    private static final float  SLIDER_W    = 500f;
+    private static final float  SLIDER_H    = 12f;
+    private static final float  THUMB_R     = 12f;
+    private static final float  ROW_H       = 70f;
+    private static final float  LABEL_W     = 240f;
+    private static final int[]  FPS_OPTIONS = {30, 60, 120};
 
     private OrthographicCamera camera;
     private SpriteBatch        batch;
@@ -55,28 +55,20 @@ public class SettingsScreen implements Screen {
     /** Index of the slider currently being dragged (-1 = none). */
     private int draggingSlider = -1;
 
-    // Slider track left-edge X, calculated in buildLayout()
-    private float sliderX;
-    // Y positions for the 3 slider rows (world-space, Y-up)
+    // Slider layout — rebuilt in buildLayout()
+    private float   sliderX;
     private float[] sliderY;
+    private float   labelX;
+    private float   toggleLabelY1;
+    private float   toggleLabelY2;
 
     @Override
     public void show() {
-        int sw = Gdx.graphics.getWidth();
-        int sh = Gdx.graphics.getHeight();
-
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false, sw, sh);
-
-        batch  = new SpriteBatch();
-        batch.setProjectionMatrix(camera.combined);
-
-        shapes = new ShapeRenderer();
-        shapes.setProjectionMatrix(camera.combined);
-
-        font = new BitmapFont();
+        camera    = new OrthographicCamera();
+        batch     = new SpriteBatch();
+        shapes    = new ShapeRenderer();
+        font      = new BitmapFont();
         font.getData().setScale(2f);
-
         titleFont = new BitmapFont();
         titleFont.getData().setScale(3f);
 
@@ -84,16 +76,16 @@ public class SettingsScreen implements Screen {
                 0x04, 0x08, 0x06);
 
         loadSettings();
-        buildLayout(sw, sh);
+        buildLayout();
 
+        // InputAdapter reads all positions from fields — safe after resize()
         Gdx.input.setInputProcessor(new InputAdapter() {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                float wy = sh - screenY;
+                float wy = Gdx.graphics.getHeight() - screenY;
                 if (backBtn.handleClick(screenX, wy))       return true;
                 if (fullscreenBtn.handleClick(screenX, wy)) return true;
                 if (fpsCycleBtn.handleClick(screenX, wy))   return true;
-                // Check if touch starts on a slider thumb or track
                 for (int i = 0; i < sliderY.length; i++) {
                     if (isOnSliderTrack(screenX, wy, i)) {
                         draggingSlider = i;
@@ -151,7 +143,7 @@ public class SettingsScreen implements Screen {
 
         batch.begin();
         drawTitle(sw, sh);
-        drawLabels(sw, sh);
+        drawRowLabels();
         backBtn.renderLabel(batch, font);
         fullscreenBtn.renderLabel(batch, font);
         fpsCycleBtn.renderLabel(batch, font);
@@ -163,7 +155,7 @@ public class SettingsScreen implements Screen {
         camera.setToOrtho(false, width, height);
         batch.setProjectionMatrix(camera.combined);
         shapes.setProjectionMatrix(camera.combined);
-        buildLayout(width, height);
+        buildLayout();
     }
 
     @Override public void pause()  {}
@@ -185,28 +177,39 @@ public class SettingsScreen implements Screen {
 
     // ── layout ────────────────────────────────────────────────────────────────
 
-    private void buildLayout(int sw, int sh) {
-        // Content block starts at 65 % screen height, rows descend
+    private void buildLayout() {
+        int sw = Gdx.graphics.getWidth();
+        int sh = Gdx.graphics.getHeight();
+
+        camera.setToOrtho(false, sw, sh);
+        batch.setProjectionMatrix(camera.combined);
+        shapes.setProjectionMatrix(camera.combined);
+
         float contentStartY = sh * 0.65f;
-        sliderX = (sw - LABEL_W - 40f - SLIDER_W) / 2f + LABEL_W + 40f;
+        float totalBlockW   = LABEL_W + 40f + SLIDER_W;
+        labelX  = (sw - totalBlockW) / 2f;
+        sliderX = labelX + LABEL_W + 40f;
+
         sliderY = new float[]{
             contentStartY,
             contentStartY - ROW_H,
             contentStartY - 2 * ROW_H
         };
 
-        float toggleRowY  = contentStartY - 3 * ROW_H;
-        float fpsRowY     = contentStartY - 4 * ROW_H;
-        float toggleX     = sliderX;
+        float toggleRowY = contentStartY - 3 * ROW_H;
+        float fpsRowY    = contentStartY - 4 * ROW_H;
+
+        toggleLabelY1 = toggleRowY + 14f;
+        toggleLabelY2 = fpsRowY    + 14f;
 
         fullscreenBtn = new MenuButton(
                 fullscreen ? "ON" : "OFF",
-                toggleX, toggleRowY - 10f, 100f, 50f,
+                sliderX, toggleRowY - 8f, 100f, 50f,
                 this::toggleFullscreen);
 
         fpsCycleBtn = new MenuButton(
                 String.valueOf(FPS_OPTIONS[fpsCapIndex]),
-                toggleX, fpsRowY - 10f, 100f, 50f,
+                sliderX, fpsRowY - 8f, 100f, 50f,
                 this::cycleFps);
 
         backBtn = new MenuButton(
@@ -224,31 +227,21 @@ public class SettingsScreen implements Screen {
         titleFont.draw(batch, text, (sw - layout.width) / 2f, sh * 0.88f);
     }
 
-    private void drawLabels(int sw, int sh) {
-        String[] sliderLabels   = {"Master Volume", "Music Volume", "SFX Volume"};
-        float[]  sliderValues   = {masterVolume, musicVolume, sfxVolume};
-        String[] toggleLabels   = {"Fullscreen", "FPS Cap"};
-        float    contentStartY  = sh * 0.65f;
+    private void drawRowLabels() {
+        String[] sliderLabels = {"Master Volume", "Music Volume", "SFX Volume"};
+        float[]  values       = {masterVolume, musicVolume, sfxVolume};
 
         font.setColor(1f, 1f, 1f, 1f);
-        float labelX = (sw - LABEL_W - 40f - SLIDER_W) / 2f;
-
         for (int i = 0; i < sliderLabels.length; i++) {
-            float y = sliderY[i] + SLIDER_H / 2f + 10f;
-            font.draw(batch, sliderLabels[i], labelX, y);
-            // value percentage next to thumb
-            String pct = Math.round(sliderValues[i]) + "%";
+            float rowMidY = sliderY[i] + SLIDER_H / 2f + 10f;
+            font.draw(batch, sliderLabels[i], labelX, rowMidY);
             font.setColor(0.8f, 0.8f, 0.8f, 1f);
-            font.draw(batch, pct, sliderX + SLIDER_W + 20f, y);
+            font.draw(batch, Math.round(values[i]) + "%", sliderX + SLIDER_W + 20f, rowMidY);
             font.setColor(1f, 1f, 1f, 1f);
         }
 
-        // Toggle row labels
-        float labelY1 = contentStartY - 3 * ROW_H + 12f;
-        float labelY2 = contentStartY - 4 * ROW_H + 12f;
-        float labelX2 = (sw - LABEL_W - 40f - SLIDER_W) / 2f;
-        font.draw(batch, "Fullscreen",  labelX2, labelY1);
-        font.draw(batch, "FPS Cap",     labelX2, labelY2);
+        font.draw(batch, "Fullscreen", labelX, toggleLabelY1);
+        font.draw(batch, "FPS Cap",    labelX, toggleLabelY2);
     }
 
     private void drawSliders() {
@@ -266,13 +259,9 @@ public class SettingsScreen implements Screen {
             shapes.rect(sliderX, ty, fill, SLIDER_H);
 
             // Thumb
-            float thumbX = sliderX + fill;
-            float thumbY = ty + SLIDER_H / 2f;
-            shapes.setColor(i == draggingSlider ? 1f : 0.85f,
-                            i == draggingSlider ? 1f : 0.85f,
-                            i == draggingSlider ? 0f : 0.85f,
-                            1f);
-            shapes.circle(thumbX, thumbY, THUMB_R, 16);
+            boolean active = (i == draggingSlider);
+            shapes.setColor(active ? 1f : 0.85f, active ? 1f : 0.85f, active ? 0f : 0.85f, 1f);
+            shapes.circle(sliderX + fill, ty + SLIDER_H / 2f, THUMB_R, 16);
         }
     }
 
@@ -287,8 +276,7 @@ public class SettingsScreen implements Screen {
     }
 
     private void updateSliderValue(float wx, int index) {
-        float raw = (wx - sliderX) / SLIDER_W * 100f;
-        float clamped = Math.max(0f, Math.min(100f, raw));
+        float clamped = Math.max(0f, Math.min(100f, (wx - sliderX) / SLIDER_W * 100f));
         switch (index) {
             case 0: masterVolume = clamped; break;
             case 1: musicVolume  = clamped; break;
@@ -301,40 +289,31 @@ public class SettingsScreen implements Screen {
 
     private void toggleFullscreen() {
         fullscreen = !fullscreen;
-        fullscreenBtn = rebuildToggle(fullscreenBtn, fullscreen ? "ON" : "OFF",
-                this::toggleFullscreen);
         if (fullscreen) {
             Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
         } else {
             Gdx.graphics.setWindowedMode(1280, 720);
         }
+        buildLayout(); // rebuilds button label and positions after mode change
         saveSettings();
     }
 
     private void cycleFps() {
         fpsCapIndex = (fpsCapIndex + 1) % FPS_OPTIONS.length;
-        fpsCycleBtn = rebuildToggle(fpsCycleBtn,
-                String.valueOf(FPS_OPTIONS[fpsCapIndex]), this::cycleFps);
         Gdx.graphics.setForegroundFPS(FPS_OPTIONS[fpsCapIndex]);
+        buildLayout(); // updates button label
         saveSettings();
-    }
-
-    /** Returns a new MenuButton with the same position/size but an updated label. */
-    private MenuButton rebuildToggle(MenuButton old, String newLabel, Runnable action) {
-        return new MenuButton(newLabel,
-                old.getX(), old.getY(), old.getWidth(), old.getHeight(), action);
     }
 
     // ── Preferences ──────────────────────────────────────────────────────────
 
     private void loadSettings() {
-        Preferences p = Gdx.app.getPreferences(PREFS_NAME);
-        masterVolume = p.getFloat("master_volume", 100f);
-        musicVolume  = p.getFloat("music_volume",   80f);
-        sfxVolume    = p.getFloat("sfx_volume",     80f);
-        fullscreen   = p.getBoolean("fullscreen",  false);
-        int savedFps = p.getInteger("fps_cap",       60);
-        fpsCapIndex  = fpsIndexOf(savedFps);
+        Preferences p    = Gdx.app.getPreferences(PREFS_NAME);
+        masterVolume     = p.getFloat("master_volume", 100f);
+        musicVolume      = p.getFloat("music_volume",   80f);
+        sfxVolume        = p.getFloat("sfx_volume",     80f);
+        fullscreen       = p.getBoolean("fullscreen",  false);
+        fpsCapIndex      = fpsIndexOf(p.getInteger("fps_cap", 60));
     }
 
     private void saveSettings() {
@@ -351,6 +330,6 @@ public class SettingsScreen implements Screen {
         for (int i = 0; i < FPS_OPTIONS.length; i++) {
             if (FPS_OPTIONS[i] == fps) return i;
         }
-        return 1; // default to 60
+        return 1;
     }
 }

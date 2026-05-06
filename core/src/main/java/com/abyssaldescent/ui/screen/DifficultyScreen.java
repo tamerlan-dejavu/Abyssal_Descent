@@ -29,7 +29,6 @@ public class DifficultyScreen implements Screen {
     private static final float CARD_GAP = 60f;
     private static final float BACK_W   = 150f;
     private static final float BACK_H   = 50f;
-    private static final float DESC_SCALE = 0.9f;
 
     private OrthographicCamera camera;
     private SpriteBatch        batch;
@@ -42,62 +41,32 @@ public class DifficultyScreen implements Screen {
     private List<MenuButton> diffButtons;
     private MenuButton       backButton;
 
+    // Cached for description rendering; rebuilt in buildLayout()
+    private float descStartX;
+    private float descY;
+
     @Override
     public void show() {
-        int sw = Gdx.graphics.getWidth();
-        int sh = Gdx.graphics.getHeight();
-
-        camera = new OrthographicCamera();
-        camera.setToOrtho(false, sw, sh);
-
-        batch  = new SpriteBatch();
-        batch.setProjectionMatrix(camera.combined);
-
-        shapes = new ShapeRenderer();
-        shapes.setProjectionMatrix(camera.combined);
-
-        font = new BitmapFont();
+        camera    = new OrthographicCamera();
+        batch     = new SpriteBatch();
+        shapes    = new ShapeRenderer();
+        font      = new BitmapFont();
         font.getData().setScale(2.4f);
-
         smallFont = new BitmapFont();
         smallFont.getData().setScale(1.2f);
-
         titleFont = new BitmapFont();
         titleFont.getData().setScale(3f);
 
         background = ScreenAssets.loadBackground("ui/backgrounds/main_menu_bg.png",
                 0x06, 0x04, 0x10);
 
-        float totalW = 3 * CARD_W + 2 * CARD_GAP;
-        float startX = (sw - totalW) / 2f;
-        float cardY  = sh / 2f - CARD_H / 2f;
+        buildLayout();
 
-        MenuButton easyBtn = new MenuButton(
-                "Easy",
-                startX, cardY, CARD_W, CARD_H,
-                () -> UiManager.getInstance().startNewGame(DifficultySettings.EASY));
-
-        MenuButton normalBtn = new MenuButton(
-                "Normal",
-                startX + CARD_W + CARD_GAP, cardY, CARD_W, CARD_H,
-                () -> UiManager.getInstance().startNewGame(DifficultySettings.NORMAL));
-
-        MenuButton hardBtn = new MenuButton(
-                "Hard",
-                startX + 2 * (CARD_W + CARD_GAP), cardY, CARD_W, CARD_H,
-                () -> UiManager.getInstance().startNewGame(DifficultySettings.HARD));
-
-        backButton = new MenuButton(
-                "Back",
-                30f, 30f, BACK_W, BACK_H,
-                () -> UiManager.getInstance().showMainMenu());
-
-        diffButtons = Arrays.asList(easyBtn, normalBtn, hardBtn);
-
+        // InputAdapter reads screen dimensions dynamically — safe after resize()
         Gdx.input.setInputProcessor(new InputAdapter() {
             @Override
             public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-                float wy = sh - screenY;
+                float wy = Gdx.graphics.getHeight() - screenY;
                 for (MenuButton btn : diffButtons) {
                     if (btn.handleClick(screenX, wy)) return true;
                 }
@@ -133,7 +102,7 @@ public class DifficultyScreen implements Screen {
 
         batch.begin();
         drawTitle(sw, sh);
-        drawDescriptions(sw, sh);
+        drawDescriptions();
         for (MenuButton btn : diffButtons) btn.renderLabel(batch, font);
         backButton.renderLabel(batch, font);
         batch.end();
@@ -144,6 +113,7 @@ public class DifficultyScreen implements Screen {
         camera.setToOrtho(false, width, height);
         batch.setProjectionMatrix(camera.combined);
         shapes.setProjectionMatrix(camera.combined);
+        buildLayout();
     }
 
     @Override public void pause()  {}
@@ -164,6 +134,46 @@ public class DifficultyScreen implements Screen {
         background.dispose();
     }
 
+    // ── layout ────────────────────────────────────────────────────────────────
+
+    private void buildLayout() {
+        int sw = Gdx.graphics.getWidth();
+        int sh = Gdx.graphics.getHeight();
+
+        camera.setToOrtho(false, sw, sh);
+        batch.setProjectionMatrix(camera.combined);
+        shapes.setProjectionMatrix(camera.combined);
+
+        float totalW = 3 * CARD_W + 2 * CARD_GAP;
+        float startX = (sw - totalW) / 2f;
+        float cardY  = sh / 2f - CARD_H / 2f;
+
+        descStartX = startX;
+        descY      = cardY - 28f;
+
+        MenuButton easyBtn = new MenuButton(
+                "Easy",
+                startX, cardY, CARD_W, CARD_H,
+                () -> UiManager.getInstance().startNewGame(DifficultySettings.EASY));
+
+        MenuButton normalBtn = new MenuButton(
+                "Normal",
+                startX + CARD_W + CARD_GAP, cardY, CARD_W, CARD_H,
+                () -> UiManager.getInstance().startNewGame(DifficultySettings.NORMAL));
+
+        MenuButton hardBtn = new MenuButton(
+                "Hard",
+                startX + 2 * (CARD_W + CARD_GAP), cardY, CARD_W, CARD_H,
+                () -> UiManager.getInstance().startNewGame(DifficultySettings.HARD));
+
+        backButton = new MenuButton(
+                "Back",
+                30f, 30f, BACK_W, BACK_H,
+                () -> UiManager.getInstance().showMainMenu());
+
+        diffButtons = Arrays.asList(easyBtn, normalBtn, hardBtn);
+    }
+
     // ── rendering helpers ─────────────────────────────────────────────────────
 
     private void drawTitle(int sw, int sh) {
@@ -173,27 +183,21 @@ public class DifficultyScreen implements Screen {
         titleFont.draw(batch, text, (sw - layout.width) / 2f, sh * 0.80f);
     }
 
-    private void drawDescriptions(int sw, int sh) {
+    private void drawDescriptions() {
         DifficultySettings[] presets = {
             DifficultySettings.EASY,
             DifficultySettings.NORMAL,
             DifficultySettings.HARD
         };
 
-        float totalW = 3 * CARD_W + 2 * CARD_GAP;
-        float startX = (sw - totalW) / 2f;
-        float cardY  = sh / 2f - CARD_H / 2f;
-        float descY  = cardY - 20f;
-
-        smallFont.getData().setScale(DESC_SCALE);
+        smallFont.getData().setScale(1.2f);
         smallFont.setColor(0.75f, 0.75f, 0.75f, 1f);
 
         for (int i = 0; i < presets.length; i++) {
-            float cx = startX + i * (CARD_W + CARD_GAP);
+            float cx  = descStartX + i * (CARD_W + CARD_GAP);
             String desc = presets[i].getDescription();
             GlyphLayout layout = new GlyphLayout(smallFont, desc);
-            float tx = cx + (CARD_W - layout.width) / 2f;
-            smallFont.draw(batch, desc, tx, descY);
+            smallFont.draw(batch, desc, cx + (CARD_W - layout.width) / 2f, descY);
         }
     }
 }
