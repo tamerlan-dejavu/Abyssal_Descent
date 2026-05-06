@@ -1,6 +1,8 @@
 package com.abyssaldescent.ui.hud;
 
 import com.abyssaldescent.combat.chips.ChipInventory;
+import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.InventoryToggleEvent;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -23,6 +25,7 @@ public final class HudRenderer {
     private final KeyCounterWidget     keyCounter;
     private final RespawnCounterWidget respawnCounter;
     private final LevelIndicator       levelIndicator;
+    private final InventoryScreen      inventoryScreen;
 
     public HudRenderer(ChipInventory chipInventory) {
         hudCamera  = new OrthographicCamera();
@@ -33,18 +36,20 @@ public final class HudRenderer {
         fontSmall  = new BitmapFont();
         fontSmall.getData().setScale(0.9f);
 
-        healthBar      = new HealthBarWidget(fontMedium);
-        chipSlots      = new HudChipSlotWidget(fontSmall);
+        healthBar       = new HealthBarWidget(fontMedium);
+        chipSlots       = new HudChipSlotWidget(fontSmall);
         chipInventory.addObserver(chipSlots);
-        keyCounter     = new KeyCounterWidget(fontMedium);
-        respawnCounter = new RespawnCounterWidget(fontMedium);
-        levelIndicator = new LevelIndicator(fontMedium);
+        keyCounter      = new KeyCounterWidget(fontMedium);
+        respawnCounter  = new RespawnCounterWidget(fontMedium);
+        levelIndicator  = new LevelIndicator(fontMedium);
+        inventoryScreen = new InventoryScreen(chipInventory, fontMedium, fontSmall);
 
         updateCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
     public void resize(int width, int height) {
         updateCamera(width, height);
+        inventoryScreen.resize(width, height);
     }
 
     private void updateCamera(int w, int h) {
@@ -84,6 +89,36 @@ public final class HudRenderer {
         chipSlots.renderText(batch, sw, sh);
 
         batch.end();
+
+        // ── inventory overlay (own begin/end inside) ─────────────────────────
+        if (inventoryScreen.isOpen()) {
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            shapes.setProjectionMatrix(hudCamera.combined);
+            batch.setProjectionMatrix(hudCamera.combined);
+            inventoryScreen.render(batch, shapes);
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+        }
+    }
+
+    // ── inventory control ────────────────────────────────────────────────────
+
+    public void toggleInventory() {
+        inventoryScreen.toggle();
+        EventBus.getInstance().post(new InventoryToggleEvent(inventoryScreen.isOpen()));
+    }
+
+    public void closeInventory() {
+        inventoryScreen.close();
+        EventBus.getInstance().post(new InventoryToggleEvent(false));
+    }
+
+    public boolean isInventoryOpen() {
+        return inventoryScreen.isOpen();
+    }
+
+    public void handleInventoryClick(float rawX, float rawY) {
+        inventoryScreen.handleClick(rawX, rawY);
     }
 
     /** Trigger an on-demand chip in the given 0-based slot (keys 1–4). */
@@ -99,5 +134,6 @@ public final class HudRenderer {
         keyCounter.dispose();
         respawnCounter.dispose();
         levelIndicator.dispose();
+        inventoryScreen.dispose();
     }
 }

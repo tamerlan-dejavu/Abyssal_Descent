@@ -23,6 +23,7 @@ import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
+import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -107,6 +108,45 @@ public class GameApp extends ApplicationAdapter {
                 chipInventory, combatManager,
                 EventBus.getInstance(), player.getCombatStrategy());
         hudRenderer = new HudRenderer(chipInventory);
+
+        // Replace the plain inputHandler processor with a multiplexer so HUD
+        // keys (TAB, 1-4, ESC-close-inventory) are handled before player input.
+        InputMultiplexer multiplexer = new InputMultiplexer(buildHudAdapter(), inputHandler);
+        Gdx.input.setInputProcessor(multiplexer);
+    }
+
+    private InputAdapter buildHudAdapter() {
+        return new InputAdapter() {
+            @Override
+            public boolean keyDown(int keycode) {
+                if (keycode == Input.Keys.TAB) {
+                    hudRenderer.toggleInventory();
+                    return true;
+                }
+                if (hudRenderer.isInventoryOpen()) {
+                    if (keycode == Input.Keys.ESCAPE) {
+                        hudRenderer.closeInventory();
+                        return true;
+                    }
+                    return false;
+                }
+                // Keys 1-4 activate chip slots while inventory is closed
+                if (keycode >= Input.Keys.NUM_1 && keycode <= Input.Keys.NUM_4) {
+                    hudRenderer.activateChipSlot(keycode - Input.Keys.NUM_1);
+                    return true;
+                }
+                return false;
+            }
+
+            @Override
+            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                if (hudRenderer.isInventoryOpen()) {
+                    hudRenderer.handleInventoryClick(screenX, screenY);
+                    return true;
+                }
+                return false;
+            }
+        };
     }
 
     private Texture loadTextureOrPlaceholder(String path, Color fallbackColor) {
