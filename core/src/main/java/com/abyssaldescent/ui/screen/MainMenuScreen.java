@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.InputAdapter;
 import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -51,7 +52,7 @@ public class MainMenuScreen implements Screen {
     private static final float BTN_H          = 150f;
     private static final float BTN_GAP        = 20f;
     private static final float CREDITS_W      = 700f;
-    private static final float CREDITS_H      = 700f;
+    private static final float CREDITS_H      = 500f;
     private static final float CREDITS_MARGIN = 20f;
     private static final float PANEL_W        = 1800f;
     private static final float PANEL_H        = 900f;
@@ -72,6 +73,9 @@ public class MainMenuScreen implements Screen {
     private Texture settingOff, settingOn;
     private Texture exitOff, exitOn;
     private Texture creditsTex;
+
+    // music
+    private Music bgMusic;
 
     // textures — overlays
     private Texture settingsPanelTex;
@@ -103,6 +107,7 @@ public class MainMenuScreen implements Screen {
         font.getData().setScale(3f);
 
         loadAllTextures();
+        startMusic();
 
         settingsOverlay   = new SettingsOverlay(settingsPanelTex, this::closeOverlay);
         difficultyOverlay = new DifficultyOverlay(difficultyPanelTex,
@@ -170,10 +175,12 @@ public class MainMenuScreen implements Screen {
     @Override
     public void hide() {
         Gdx.input.setInputProcessor(null);
+        if (bgMusic != null) bgMusic.pause();
     }
 
     @Override
     public void dispose() {
+        if (bgMusic != null) { bgMusic.stop(); bgMusic.dispose(); }
         batch.dispose();
         shapes.dispose();
         font.dispose();
@@ -405,6 +412,19 @@ public class MainMenuScreen implements Screen {
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    private void startMusic() {
+        String path = "ui/sounds/d093f364c701d48.mp3";
+        if (!Gdx.files.internal(path).exists()) return;
+        try {
+            bgMusic = Gdx.audio.newMusic(Gdx.files.internal(path));
+            bgMusic.setLooping(true);
+            bgMusic.setVolume(0.6f);
+            bgMusic.play();
+        } catch (Exception e) {
+            Gdx.app.error("MainMenuScreen", "Failed to load bg music", e);
+        }
+    }
 
     private boolean hasSaveGame() {
         Preferences prefs = Gdx.app.getPreferences("abyssal_descent_save");
