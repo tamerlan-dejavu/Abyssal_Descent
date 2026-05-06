@@ -12,6 +12,22 @@ final class ScreenAssets {
     private ScreenAssets() {}
 
     /**
+     * Loads a texture from {@code path} inside the assets folder.
+     * Returns {@code null} if the file does not exist or fails to load.
+     */
+    static Texture loadTexture(String path) {
+        if (!Gdx.files.internal(path).exists()) return null;
+        try {
+            Texture t = new Texture(Gdx.files.internal(path));
+            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+            return t;
+        } catch (Exception e) {
+            Gdx.app.error("ScreenAssets", "Failed to load: " + path, e);
+            return null;
+        }
+    }
+
+    /**
      * Loads a background texture from {@code path} inside the assets folder.
      * Falls back to a solid 1×1 texture using the given RGB byte values if the
      * file does not exist or fails to load.
