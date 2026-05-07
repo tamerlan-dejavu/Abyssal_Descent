@@ -46,7 +46,11 @@ public final class UiManager {
     }
 
     public void showGameOver() {
-        navigate(new GameOverScreen());
+        navigate(new GameOverScreen(new GameOverStats(1, 0, 3)));
+    }
+
+    public void showGameOver(GameOverStats stats) {
+        navigate(new GameOverScreen(stats));
     }
 
     private void navigate(Screen next) {

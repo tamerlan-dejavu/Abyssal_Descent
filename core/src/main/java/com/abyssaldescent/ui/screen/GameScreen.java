@@ -25,6 +25,7 @@ import com.abyssaldescent.render.CameraController;
 import com.abyssaldescent.render.EnemySpriteRegistry;
 import com.abyssaldescent.render.SpriteOrientation;
 import com.abyssaldescent.ui.hud.HudRenderer;
+import com.abyssaldescent.ui.screen.GameOverStats;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.InputAdapter;
@@ -123,7 +124,10 @@ public class GameScreen implements Screen {
 
         phaseListener = e -> {
             if (e.getNewPhase() == GamePhase.GAME_OVER) {
-                UiManager.getInstance().showGameOver();
+                int floor       = controller.getState().getFloorNumber();
+                int respUsed    = controller.getMaxRespawns() - controller.getRespawnsRemaining();
+                int maxResp     = controller.getMaxRespawns();
+                UiManager.getInstance().showGameOver(new GameOverStats(floor, respUsed, maxResp));
             }
         };
         EventBus.getInstance().subscribe(GamePhaseChangedEvent.class, phaseListener);
