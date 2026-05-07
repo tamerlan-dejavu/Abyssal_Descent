@@ -54,9 +54,14 @@ public final class UiManager {
     }
 
     private void navigate(Screen next) {
-        Screen prev = game.getScreen();
-        game.setScreen(next);
-        if (prev != null) prev.dispose();
+        try {
+            Screen prev = game.getScreen();
+            game.setScreen(next);
+            if (prev != null) prev.dispose();
+        } catch (Exception e) {
+            com.badlogic.gdx.Gdx.app.error("UiManager", "Navigation error", e);
+            throw e;
+        }
     }
 
     static void resetInstance() {

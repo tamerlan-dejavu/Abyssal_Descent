@@ -3,7 +3,6 @@ package com.abyssaldescent.ui.screen;
 import com.abyssaldescent.GameController;
 import com.abyssaldescent.GamePhase;
 import com.abyssaldescent.GameStateManager;
-import com.abyssaldescent.entity.player.CharacterType;
 import com.abyssaldescent.audio.MusicPlayer;
 import com.abyssaldescent.combat.CombatManager;
 import com.abyssaldescent.combat.chips.ChipInventory;
@@ -78,6 +77,7 @@ public class GameScreen implements Screen {
     private EventListener<GamePhaseChangedEvent> phaseListener;
     private int demoKeys     = 0;
     private int demoRespawns = 3;
+    private GameOverStats pendingGameOverStats = null;
 
     public GameScreen(DifficultySettings difficulty) {
         this.difficulty = difficulty;
@@ -130,7 +130,7 @@ public class GameScreen implements Screen {
                 int respUsed    = controller.getMaxRespawns() - controller.getRespawnsRemaining();
                 int maxResp     = controller.getMaxRespawns();
                 Gdx.app.log("GameScreen", "Showing GameOver: floor=" + floor + " respUsed=" + respUsed);
-                UiManager.getInstance().showGameOver(new GameOverStats(floor, respUsed, maxResp));
+                pendingGameOverStats = new GameOverStats(floor, respUsed, maxResp);
             }
         };
         EventBus.getInstance().subscribe(GamePhaseChangedEvent.class, phaseListener);
@@ -170,6 +170,11 @@ public class GameScreen implements Screen {
 
         fireDemoEvents();
         hudRenderer.render(batch, shapes, delta);
+
+        if (pendingGameOverStats != null) {
+            UiManager.getInstance().showGameOver(pendingGameOverStats);
+            pendingGameOverStats = null;
+        }
     }
 
     @Override
@@ -253,9 +258,6 @@ public class GameScreen implements Screen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             demoRespawns = Math.max(demoRespawns - 1, 0);
             EventBus.getInstance().post(new RespawnUsedEvent(demoRespawns, 3));
-        }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
-            controller.applyDamage(CharacterType.KARIN, 999);
         }
     }
 
