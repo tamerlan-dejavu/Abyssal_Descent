@@ -17,16 +17,12 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public final class StatusWindow {
 
-    public static final float W = 500f;
-    public static final float H = 500f;
+    public static final float W = 300f;
+    public static final float H = 300f;
 
-    private static final String ASSET_PATH = "ui/hud/status_window.png";
+    private static final String ASSET_PATH = "ui/backgrounds/stats.png";
 
-    private static final float PAD       = 14f;
-    private static final float BAR_H     = 26f;
-    private static final float ICON_SIZE = 14f;
-    private static final float ICON_GAP  = 8f;
-    private static final int   MAX_LIVES = 3;
+    private static final int MAX_LIVES = 3;
 
     private int   currentHp;
     private int   maxHp;
@@ -36,17 +32,15 @@ public final class StatusWindow {
     private float damageFade        = 0f;
 
     private final Texture    bgTexture;
-    private final BitmapFont fontTitle;
-    private final BitmapFont fontBody;
+    private final BitmapFont font;
 
     private final EventListener<HealthChangedEvent> hpListener      = this::onHealthChanged;
     private final EventListener<DamageEvent>        damageListener  = this::onDamage;
     private final EventListener<RespawnUsedEvent>   respawnListener = this::onRespawnUsed;
 
     public StatusWindow(BitmapFont fontTitle, BitmapFont fontBody) {
-        this.fontTitle = fontTitle;
-        this.fontBody  = fontBody;
-        bgTexture      = tryLoad(ASSET_PATH);
+        this.font = fontBody;
+        bgTexture = tryLoad(ASSET_PATH);
         syncFromGameState();
         EventBus.getInstance().subscribe(HealthChangedEvent.class, hpListener);
         EventBus.getInstance().subscribe(DamageEvent.class, damageListener);
@@ -107,52 +101,24 @@ public final class StatusWindow {
             shapes.rect(x, y, bw, H);
             shapes.rect(x + W - bw, y, bw, H);
         }
-
-        float barX = x + PAD;
-        float barY = y + H - 100f;
-        float barW = W - PAD * 2f;
-        float pct  = maxHp > 0 ? (float) currentHp / maxHp : 0f;
-
-        shapes.setColor(0.12f, 0.06f, 0.06f, 1f);
-        shapes.rect(barX, barY, barW, BAR_H);
-        shapes.setColor(1f, 0.267f, 0.267f, 1f);
-        shapes.rect(barX, barY, barW * pct, BAR_H);
-
-        if (bgTexture == null) {
-            float sepY = y + H - 155f;
-            shapes.setColor(0.18f, 0.18f, 0.4f, 0.6f);
-            shapes.rect(x + PAD, sepY, W - PAD * 2f, 1f);
-
-            float sepY2 = y + H - 230f;
-            shapes.setColor(0.18f, 0.18f, 0.4f, 0.6f);
-            shapes.rect(x + PAD, sepY2, W - PAD * 2f, 1f);
-        }
-
-        float iconX = x + PAD + 90f;
-        float iconY = y + H - 285f + (20f - ICON_SIZE) * 0.5f;
-        for (int i = 0; i < respawnsMax; i++) {
-            shapes.setColor(i < respawnsRemaining
-                    ? new Color(1f, 0.267f, 0.267f, 1f)
-                    : new Color(0.22f, 0.05f, 0.05f, 1f));
-            shapes.rect(iconX + i * (ICON_SIZE + ICON_GAP), iconY, ICON_SIZE, ICON_SIZE);
-        }
     }
 
     public void renderText(SpriteBatch batch, float x, float y) {
-        fontTitle.getData().setScale(2.0f);
-        fontTitle.setColor(0.55f, 0.55f, 1f, 1f);
-        fontTitle.draw(batch, "STATUS", x + PAD, y + H - 20f);
+        float cx   = x + W * 0.5f - 19f;
+        float yTop = y + H * 0.82f - 18f;
+        float yMid = y + H * 0.55f - 3f;
+        float yBot = y + H * 0.28f + 17f;
 
-        fontBody.getData().setScale(1.6f);
-        fontBody.setColor(Color.WHITE);
-        fontBody.draw(batch, "HP  " + currentHp + " / " + maxHp, x + PAD, y + H - 68f);
+        font.getData().setScale(1.6f);
 
-        fontBody.getData().setScale(1.4f);
-        fontBody.setColor(0.85f, 0.85f, 0.85f, 1f);
-        fontBody.draw(batch, "Base DMG:  " + baseDamage, x + PAD, y + H - 170f);
+        font.setColor(1f, 0.35f, 0.35f, 1f);
+        font.draw(batch, currentHp + " / " + maxHp, cx, yTop);
 
-        fontBody.setColor(1f, 0.4f, 0.4f, 1f);
-        fontBody.draw(batch, "LIVES:", x + PAD, y + H - 258f);
+        font.setColor(1f, 0.85f, 0.3f, 1f);
+        font.draw(batch, String.valueOf(baseDamage), cx, yMid);
+
+        font.setColor(0.2f, 0.9f, 0.3f, 1f);
+        font.draw(batch, respawnsRemaining + " / " + respawnsMax, cx, yBot);
     }
 
     public void dispose() {

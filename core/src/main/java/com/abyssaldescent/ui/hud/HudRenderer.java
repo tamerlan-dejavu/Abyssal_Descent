@@ -18,29 +18,27 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 public final class HudRenderer {
 
     private final OrthographicCamera hudCamera;
-    private final BitmapFont         fontMedium;
-    private final BitmapFont         fontSmall;
-    private final StatusWindow        statusWindow;
-    private final MinimapWindow       minimapWindow;
-    private final KeyInventoryWindow  keyInventory;
-    private final HudChipSlotWidget   chipSlots;
-    private final InventoryScreen     inventoryScreen;
+    private final BitmapFont        fontMedium;
+    private final BitmapFont        fontSmall;
+    private final StatusWindow      statusWindow;
+    private final MinimapWindow     minimapWindow;
+    private final HudChipSlotWidget chipSlots;
+    private final InventoryScreen   inventoryScreen;
 
     public HudRenderer(ChipInventory chipInventory) {
-        hudCamera  = new OrthographicCamera();
+        this.hudCamera = new OrthographicCamera();
 
-        fontMedium = new BitmapFont();
-        fontMedium.getData().setScale(1.6f);
+        this.fontMedium = new BitmapFont();
+        this.fontMedium.getData().setScale(1.6f);
 
-        fontSmall  = new BitmapFont();
-        fontSmall.getData().setScale(0.9f);
+        this.fontSmall = new BitmapFont();
+        this.fontSmall.getData().setScale(0.9f);
 
-        statusWindow    = new StatusWindow(fontMedium, fontSmall);
-        minimapWindow   = new MinimapWindow(fontMedium, fontSmall);
-        keyInventory    = new KeyInventoryWindow(fontMedium, fontSmall);
-        chipSlots       = new HudChipSlotWidget(fontSmall);
-        chipInventory.addObserver(chipSlots);
-        inventoryScreen = new InventoryScreen(chipInventory, fontMedium, fontSmall);
+        this.statusWindow = new StatusWindow(this.fontMedium, this.fontSmall);
+        this.minimapWindow = new MinimapWindow(this.fontMedium, this.fontSmall);
+        this.chipSlots = new HudChipSlotWidget(this.fontSmall);
+        chipInventory.addObserver(this.chipSlots);
+        this.inventoryScreen = new InventoryScreen(chipInventory, this.fontMedium, this.fontSmall);
 
         updateCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
@@ -69,7 +67,6 @@ public final class HudRenderer {
         batch.begin();
         statusWindow.renderBackground(batch, 10f, sh - StatusWindow.H - 10f);
         minimapWindow.renderBackground(batch, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
-        keyInventory.renderBackground(batch, sw - KeyInventoryWindow.W - 10f, 10f);
         batch.end();
 
         // ── shape pass (procedural backgrounds + bars + icons) ────────────────
@@ -78,7 +75,6 @@ public final class HudRenderer {
 
         statusWindow.renderShapes(shapes, 10f, sh - StatusWindow.H - 10f);
         minimapWindow.renderShapes(shapes, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
-        keyInventory.renderShapes(shapes, sw - KeyInventoryWindow.W - 10f, 10f);
         chipSlots.renderShapes(shapes, sw, sh);
 
         shapes.end();
@@ -89,7 +85,6 @@ public final class HudRenderer {
 
         statusWindow.renderText(batch, 10f, sh - StatusWindow.H - 10f);
         minimapWindow.renderText(batch, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
-        keyInventory.renderText(batch, sw - KeyInventoryWindow.W - 10f, 10f);
         chipSlots.renderText(batch, sw, sh);
 
         batch.end();
@@ -137,7 +132,6 @@ public final class HudRenderer {
         fontSmall.dispose();
         statusWindow.dispose();
         minimapWindow.dispose();
-        keyInventory.dispose();
         chipSlots.dispose();
         inventoryScreen.dispose();
     }

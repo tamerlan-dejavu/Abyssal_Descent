@@ -192,6 +192,7 @@ public class MainMenuScreen implements Screen {
         shapes.dispose();
         font.dispose();
         disposeTextures();
+        if (settingsOverlay != null) settingsOverlay.dispose();
         if (blurFbo != null) blurFbo.dispose();
     }
 
@@ -448,16 +449,16 @@ public class MainMenuScreen implements Screen {
                                   "ui/overlays/difficulty_panel.png");
 
         // Difficulty buttons 500×150 — _idle/_glow preferred, _off/_on as fallback
-        easyOff    = firstOf("ui/overlays/easy_idle.png",   "ui/overlays/easy_off.png");
-        easyOn     = firstOf("ui/overlays/easy_glow.png",   "ui/overlays/easy_on.png");
-        normalOff  = firstOf("ui/overlays/normal_idle.png", "ui/overlays/normal_off.png");
-        normalOn   = firstOf("ui/overlays/normal_glow.png", "ui/overlays/normal_on.png");
-        hardOff    = firstOf("ui/overlays/hard_idle.png",   "ui/overlays/hard_off.png");
-        hardOn     = firstOf("ui/overlays/hard_glow.png",   "ui/overlays/hard_on.png");
+        easyOff    = firstOf("ui/overlays/easy_idle.png",   "ui/overlays/easy_off.png",   "ui/buttons/easy_off.png");
+        easyOn     = firstOf("ui/overlays/easy_glow.png",   "ui/overlays/easy_on.png",    "ui/buttons/easy_on.png");
+        normalOff  = firstOf("ui/overlays/normal_idle.png", "ui/overlays/normal_off.png", "ui/buttons/normal_off.png");
+        normalOn   = firstOf("ui/overlays/normal_glow.png", "ui/overlays/normal_on.png",  "ui/buttons/normal_on.png");
+        hardOff    = firstOf("ui/overlays/hard_idle.png",   "ui/overlays/hard_off.png",   "ui/buttons/hard_off.png");
+        hardOn     = firstOf("ui/overlays/hard_glow.png",   "ui/overlays/hard_on.png",    "ui/buttons/hard_on.png");
 
         // Back button 500×150 — bottom-right corner of difficulty screen
-        diffBackOff = firstOf("ui/overlays/back_idle.png", "ui/overlays/back_off.png");
-        diffBackOn  = firstOf("ui/overlays/back_glow.png", "ui/overlays/back_on.png");
+        diffBackOff = firstOf("ui/overlays/back_idle.png", "ui/overlays/back_off.png", "ui/buttons/back_off.png");
+        diffBackOn  = firstOf("ui/overlays/back_glow.png", "ui/overlays/back_on.png",  "ui/buttons/back_on.png");
     }
 
     private void disposeTextures() {
