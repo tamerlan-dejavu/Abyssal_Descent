@@ -2,8 +2,7 @@ package com.abyssaldescent.ui.feedback;
 
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.abyssaldescent.event.EventBus;
-
+import com.abyssaldescent.event.TypedEventBus;
 
 public class VisualFeedbackManager {
 
@@ -13,19 +12,13 @@ public class VisualFeedbackManager {
     private final ScreenFlash      screenFlash;
     private final AttackSlash      attackSlash;
 
-    private final ShapeRenderer shapeRenderer;
-
-
-    public VisualFeedbackManager(EventBus eventBus, ShapeRenderer shapeRenderer) {
-        this.shapeRenderer = shapeRenderer;
-
+    public VisualFeedbackManager(TypedEventBus eventBus, ShapeRenderer shapeRenderer) {
         damageNumbers = new DamageNumberPool(eventBus);
         hitFlash      = new HitFlash(eventBus);
         knockback     = new Knockback(eventBus);
         screenFlash   = new ScreenFlash(eventBus);
         attackSlash   = new AttackSlash(eventBus, shapeRenderer);
     }
-
 
     public void update(float delta) {
         damageNumbers.update(delta);
@@ -35,36 +28,24 @@ public class VisualFeedbackManager {
         attackSlash.update(delta);
     }
 
-
-    /** Вызывать внутри shapeRenderer.begin(Filled) */
-    public void renderShapes() {
-        // (пока пусто — screenFlash рисует сам свой ShapeRenderer)
-    }
-
-    /** Вызывать внутри shapeRenderer.begin(Line) */
     public void renderLines() {
         attackSlash.render();
     }
 
-    /** Вызывать внутри batch.begin() */
     public void renderBatch(SpriteBatch batch) {
         damageNumbers.render(batch);
     }
 
-    /** Вызывать ПОСЛЕ batch.end() — поверх всего */
     public void renderScreenFlash() {
         screenFlash.render();
     }
 
-
-    public HitFlash  getHitFlash()  { return hitFlash; }
-    public Knockback getKnockback() { return knockback; }
-
-    /** Запустить вспышку перехода между ярусами (fade to black). */
     public void triggerLevelTransition() {
         screenFlash.trigger(ScreenFlash.FlashType.BLACK, 0.8f);
     }
 
+    public HitFlash  getHitFlash()  { return hitFlash; }
+    public Knockback getKnockback() { return knockback; }
 
     public void resize(int w, int h) {
         screenFlash.resize(w, h);

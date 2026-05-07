@@ -159,6 +159,8 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void render(float delta) {
+        if (buttons == null || batch == null) return;
+
         int sw = Gdx.graphics.getWidth();
         int sh = Gdx.graphics.getHeight();
 

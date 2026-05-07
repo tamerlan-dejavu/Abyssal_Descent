@@ -1,9 +1,0 @@
-package com.abyssaldescent.event.events;
-
-import com.abyssaldescent.event.GameEvent;
-
-public class PlayerDiedEvent extends GameEvent {
-    private final int respawnsLeft;
-    public PlayerDiedEvent(int respawnsLeft) { super(); this.respawnsLeft = respawnsLeft; }
-    public int getRespawnsLeft() { return respawnsLeft; }
-}

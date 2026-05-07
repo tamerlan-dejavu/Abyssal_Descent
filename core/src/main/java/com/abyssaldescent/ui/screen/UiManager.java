@@ -2,12 +2,9 @@ package com.abyssaldescent.ui.screen;
 
 import com.abyssaldescent.config.DifficultySettings;
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 
-/**
- * Singleton facade that owns all screen-navigation logic.
- * Call {@link #init(Game)} once from {@code GameApp.create()}.
- */
 public final class UiManager {
 
     private static UiManager instance;
@@ -20,59 +17,57 @@ public final class UiManager {
         return instance;
     }
 
-    /** Must be called before any navigation method. */
     public void init(Game game) {
         this.game = game;
     }
 
     public void showMainMenu() {
-        navigate(new MainMenuScreen());
+        navigateTo(new MainMenuScreen());
     }
 
     public void showDifficulty() {
-        navigate(new DifficultyScreen());
+        navigateTo(new DifficultyScreen());
     }
 
     public void showSettings() {
-        navigate(new SettingsScreen());
+        navigateTo(new SettingsScreen());
     }
 
     public void startNewGame(DifficultySettings difficulty) {
-        navigate(new GameScreen(difficulty));
+        navigateTo(new GameScreen(difficulty));
     }
 
     public void continueGame() {
-        navigate(new GameScreen(DifficultySettings.NORMAL));
-    }
-
-    public void showGameOver() {
-        navigate(new GameOverScreen(new GameOverStats(1, 0, 3)));
+        navigateTo(new GameScreen(DifficultySettings.NORMAL));
     }
 
     public void showGameOver(GameOverStats stats) {
-        navigate(new GameOverScreen(stats));
+        navigateTo(new GameOverScreen(stats));
     }
 
-    private void navigate(Screen next) {
-        try {
-            com.badlogic.gdx.Gdx.app.log("UiManager", "navigate() called with screen: " + next.getClass().getSimpleName());
-            Screen prev = game.getScreen();
-            com.badlogic.gdx.Gdx.app.log("UiManager", "current screen: " + (prev != null ? prev.getClass().getSimpleName() : "null"));
-            com.badlogic.gdx.Gdx.app.log("UiManager", "calling setScreen()");
-            game.setScreen(next);
-            com.badlogic.gdx.Gdx.app.log("UiManager", "setScreen() completed, disposing previous screen");
-            if (prev != null) {
-                try {
+    public void showGameOver() {
+        navigateTo(new GameOverScreen(new GameOverStats(1, 0, 3)));
+    }
+
+    public void showEnding(RunStats stats) {
+        navigateTo(new EndingScreen(stats));
+    }
+
+    /**
+     * Posts navigation to the next frame via Gdx.app.postRunnable so it never
+     * runs inside an active render() call, eliminating use-after-dispose crashes.
+     */
+    private void navigateTo(final Screen next) {
+        Gdx.app.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                Screen prev = game.getScreen();
+                game.setScreen(next);
+                if (prev != null) {
                     prev.dispose();
-                    com.badlogic.gdx.Gdx.app.log("UiManager", "previous screen disposed successfully");
-                } catch (Exception disposeError) {
-                    com.badlogic.gdx.Gdx.app.error("UiManager", "Error disposing previous screen", disposeError);
                 }
             }
-        } catch (Exception e) {
-            com.badlogic.gdx.Gdx.app.error("UiManager", "Navigation error", e);
-            e.printStackTrace();
-        }
+        });
     }
 
     static void resetInstance() {

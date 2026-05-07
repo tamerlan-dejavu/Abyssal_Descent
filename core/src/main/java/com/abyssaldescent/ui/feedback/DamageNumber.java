@@ -47,21 +47,21 @@ public class DamageNumber {
         Color color;
 
         switch (kind) {
-            case CRIT -> {
+            case CRIT:
                 text  = "!" + amount + "!";
                 font  = fontCrit;
-                color = new Color(1f, 0.85f, 0f, alpha);   // золото
-            }
-            case HEAL -> {
+                color = new Color(1f, 0.85f, 0f, alpha);
+                break;
+            case HEAL:
                 text  = "+" + amount;
                 font  = fontNormal;
-                color = new Color(0.2f, 0.95f, 0.3f, alpha); // зелёный
-            }
-            default -> {
+                color = new Color(0.2f, 0.95f, 0.3f, alpha);
+                break;
+            default:
                 text  = "-" + amount;
                 font  = fontNormal;
-                color = new Color(0.95f, 0.25f, 0.25f, alpha); // красный
-            }
+                color = new Color(0.95f, 0.25f, 0.25f, alpha);
+                break;
         }
 
         font.setColor(color);
