@@ -194,21 +194,25 @@ public class GameScreen implements Screen {
 
     @Override
     public void dispose() {
-        if (batch != null)  batch.dispose();
-        if (shapes != null) shapes.dispose();
-        if (karinIdleTexture != null) karinIdleTexture.dispose();
-        if (karinAttackWindupTexture != null && karinAttackWindupTexture != karinIdleTexture)
-            karinAttackWindupTexture.dispose();
-        if (karinAttackStrikeTexture != null && karinAttackStrikeTexture != karinIdleTexture)
-            karinAttackStrikeTexture.dispose();
-        if (floorTexture != null)    floorTexture.dispose();
-        if (enemySprites != null)    enemySprites.dispose();
-        musicPlayer.dispose();
-        if (combatManager != null)   combatManager.dispose();
-        if (chipPickupSystem != null)    chipPickupSystem.dispose();
-        if (hudRenderer != null)         hudRenderer.dispose();
-        if (playerEffectSystem != null)  playerEffectSystem.dispose();
-        if (controller != null)          controller.dispose();
+        try {
+            if (batch != null)  batch.dispose();
+            if (shapes != null) shapes.dispose();
+            if (karinIdleTexture != null) karinIdleTexture.dispose();
+            if (karinAttackWindupTexture != null && karinAttackWindupTexture != karinIdleTexture)
+                karinAttackWindupTexture.dispose();
+            if (karinAttackStrikeTexture != null && karinAttackStrikeTexture != karinIdleTexture)
+                karinAttackStrikeTexture.dispose();
+            if (floorTexture != null)    floorTexture.dispose();
+            if (enemySprites != null)    enemySprites.dispose();
+            if (musicPlayer != null) musicPlayer.dispose();
+            if (combatManager != null)   combatManager.dispose();
+            if (chipPickupSystem != null)    chipPickupSystem.dispose();
+            if (hudRenderer != null)         hudRenderer.dispose();
+            if (playerEffectSystem != null)  playerEffectSystem.dispose();
+            if (controller != null)          controller.dispose();
+        } catch (Exception e) {
+            Gdx.app.error("GameScreen", "Error in dispose()", e);
+        }
     }
 
     // ── input ────────────────────────────────────────────────────────────────

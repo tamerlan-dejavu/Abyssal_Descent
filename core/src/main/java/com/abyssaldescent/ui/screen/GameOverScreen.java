@@ -105,7 +105,7 @@ public final class GameOverScreen implements Screen {
         tierNameW = baseW * 1.75f + 50f;
         tierNameH = baseH * 1.75f;
         tierNameX = (sw - tierNameW) * 0.5f;
-        tierNameY = buttonY + buttonH + 50f;
+        tierNameY = buttonY + buttonH + 50f + 10f;
     }
 
     @Override
