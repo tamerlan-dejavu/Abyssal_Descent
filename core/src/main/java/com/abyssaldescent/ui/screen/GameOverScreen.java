@@ -4,10 +4,7 @@ import com.abyssaldescent.GameStateManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
@@ -15,18 +12,23 @@ public final class GameOverScreen implements Screen {
 
     private final GameOverStats stats;
 
-    private SpriteBatch   batch;
-    private BitmapFont    fontTier;
-    private GlyphLayout   layout;
+    private SpriteBatch batch;
 
     private Texture backgroundTexture;
+    private Texture tierReachedLabelTexture;
+    private Texture tierNameTexture;
     private Texture buttonOffTexture;
     private Texture buttonOnTexture;
 
     private float buttonX;
     private float buttonY;
-    private float buttonW;
-    private float buttonH;
+    private float buttonW = 500f;
+    private float buttonH = 150f;
+
+    private float tierLabelX;
+    private float tierLabelY;
+    private float tierNameX;
+    private float tierNameY;
 
     private boolean buttonHovered = false;
 
@@ -38,26 +40,32 @@ public final class GameOverScreen implements Screen {
     public void show() {
         Gdx.input.setInputProcessor(null);
 
-        batch  = new SpriteBatch();
-        layout = new GlyphLayout();
-
-        fontTier = new BitmapFont();
-        fontTier.getData().setScale(2.0f);
-
-        float sw = Gdx.graphics.getWidth();
+        batch = new SpriteBatch();
 
         loadTextures();
-
-        buttonW = 400f;
-        buttonH = 120f;
-        buttonX = (sw - buttonW) * 0.5f;
-        buttonY = 80f;
+        layoutElements();
     }
 
     private void loadTextures() {
         backgroundTexture = loadTexture("ui/backgrounds/death-screen.jpg");
-        buttonOffTexture  = loadTexture("ui/buttons/back_to_menu_off.png");
-        buttonOnTexture   = loadTexture("ui/buttons/back_to_menu_on.png");
+        tierReachedLabelTexture = loadTexture("ui/buttons/tier_reached.png");
+        tierNameTexture = loadTierNameTexture();
+        buttonOffTexture = loadTexture("ui/buttons/back_to_menu_off.png");
+        buttonOnTexture = loadTexture("ui/buttons/back_to_menu_on.png");
+    }
+
+    private Texture loadTierNameTexture() {
+        String tierPath = getTierTexturePath(stats.floorReached);
+        return loadTexture(tierPath);
+    }
+
+    private String getTierTexturePath(int floor) {
+        switch (floor) {
+            case 1: return "ui/buttons/upper_ruins.png";
+            case 2: return "ui/buttons/flooded_catacombs.png";
+            case 3: return "ui/buttons/maltarions_abyss.png";
+            default: return "ui/buttons/upper_ruins.png";
+        }
     }
 
     private Texture loadTexture(String path) {
@@ -69,6 +77,24 @@ public final class GameOverScreen implements Screen {
             Gdx.app.error("GameOverScreen", "Failed to load " + path, e);
         }
         return null;
+    }
+
+    private void layoutElements() {
+        float sw = Gdx.graphics.getWidth();
+
+        buttonW = 500f;
+        buttonH = 150f;
+        buttonX = (sw - buttonW) * 0.5f;
+        buttonY = 80f;
+
+        float tierLabelW = 300f;
+        float tierLabelH = 80f;
+        tierLabelX = (sw - tierLabelW) * 0.5f;
+        tierLabelY = buttonY + buttonH + 50f;
+
+        float tierNameW = 400f;
+        tierNameX = (sw - tierNameW) * 0.5f;
+        tierNameY = tierLabelY + tierLabelH;
     }
 
     @Override
@@ -101,20 +127,23 @@ public final class GameOverScreen implements Screen {
             batch.draw(backgroundTexture, 0, 0, sw, sh);
         }
 
-        drawTierText(sw, sh);
-
+        drawTierLabel();
+        drawTierName();
         drawButton();
 
         batch.end();
     }
 
-    private void drawTierText(float sw, float sh) {
-        String tierText = "Tier reached: " + tierName(stats.floorReached);
-        fontTier.setColor(Color.WHITE);
-        layout.setText(fontTier, tierText);
-        float textX = (sw - layout.width) * 0.5f;
-        float textY = sh - 120f;
-        fontTier.draw(batch, layout, textX, textY);
+    private void drawTierLabel() {
+        if (tierReachedLabelTexture != null) {
+            batch.draw(tierReachedLabelTexture, tierLabelX, tierLabelY, 300f, 80f);
+        }
+    }
+
+    private void drawTierName() {
+        if (tierNameTexture != null) {
+            batch.draw(tierNameTexture, tierNameX, tierNameY, 400f, 100f);
+        }
     }
 
     private void drawButton() {
@@ -129,21 +158,9 @@ public final class GameOverScreen implements Screen {
         UiManager.getInstance().showMainMenu();
     }
 
-    private static String tierName(int floor) {
-        switch (floor) {
-            case 1:  return "Upper Ruins";
-            case 2:  return "Sunken Crypts";
-            case 3:  return "Void Core";
-            default: return "Floor " + floor;
-        }
-    }
-
     @Override
     public void resize(int w, int h) {
-        buttonW = 400f;
-        buttonH = 120f;
-        buttonX = (w - buttonW) * 0.5f;
-        buttonY = 80f;
+        layoutElements();
     }
 
     @Override public void pause()  {}
@@ -153,8 +170,9 @@ public final class GameOverScreen implements Screen {
     @Override
     public void dispose() {
         if (batch != null) batch.dispose();
-        if (fontTier != null) fontTier.dispose();
         if (backgroundTexture != null) backgroundTexture.dispose();
+        if (tierReachedLabelTexture != null) tierReachedLabelTexture.dispose();
+        if (tierNameTexture != null) tierNameTexture.dispose();
         if (buttonOffTexture != null) buttonOffTexture.dispose();
         if (buttonOnTexture != null) buttonOnTexture.dispose();
     }
