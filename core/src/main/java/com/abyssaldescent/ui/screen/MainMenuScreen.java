@@ -78,7 +78,8 @@ public class MainMenuScreen implements Screen {
     private Music bgMusic;
 
     // textures — settings overlay
-    private Texture settingsPanelTex;
+    private Texture settingsBgTex;    // full-screen background (ui/backgrounds/settings.png)
+    private Texture settingsPanelTex; // optional centred panel (unused if settingsBgTex present)
 
     // textures — difficulty overlay (full-screen)
     private Texture difficultyBgTex;           // full-screen background
@@ -237,32 +238,36 @@ public class MainMenuScreen implements Screen {
     }
 
     /**
-     * Settings overlay: blurred background → dark dim → panel → sliders → labels.
+     * Settings overlay: custom background (settings.png) or blurred fallback → sliders → labels.
      */
     private void renderSettingsOverlay(int sw, int sh, float mx, float my) {
         settingsOverlay.update(mx, my);
 
-        if (blurRegion == null) captureBlur(sw, sh);
-
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        batch.begin();
-        batch.draw(blurRegion, 0, 0, sw, sh);
-        batch.end();
+        if (settingsBgTex != null) {
+            // Custom settings background — draw full-screen, no blur needed
+            batch.begin();
+            batch.draw(settingsBgTex, 0, 0, sw, sh);
+            batch.end();
+        } else {
+            // Fallback: blurred main menu + dark dim
+            if (blurRegion == null) captureBlur(sw, sh);
+            batch.begin();
+            batch.draw(blurRegion, 0, 0, sw, sh);
+            batch.end();
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            shapes.begin(ShapeRenderer.ShapeType.Filled);
+            shapes.setColor(0f, 0f, 0f, 0.60f);
+            shapes.rect(0, 0, sw, sh);
+            shapes.end();
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+        }
 
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(0f, 0f, 0f, 0.60f);
-        shapes.rect(0, 0, sw, sh);
-        settingsOverlay.renderFallbackBackground(shapes);
-        shapes.end();
-
-        batch.begin();
-        settingsOverlay.renderPanelTexture(batch);
-        batch.end();
-
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         settingsOverlay.renderInteractiveShapes(shapes);
         shapes.end();
@@ -433,6 +438,8 @@ public class MainMenuScreen implements Screen {
         exitOn       = ScreenAssets.loadTexture("ui/buttons/exit_on.png");
         creditsTex   = ScreenAssets.loadTexture("ui/credits/credits.png");
 
+        settingsBgTex    = firstOf("ui/backgrounds/settings.png",
+                                   "ui/overlays/settings_bg.png");
         settingsPanelTex = ScreenAssets.loadTexture("ui/overlays/settings_panel.png");
 
         // Difficulty: full-screen background — check all known locations
@@ -464,6 +471,7 @@ public class MainMenuScreen implements Screen {
         if (exitOff         != null) exitOff.dispose();
         if (exitOn          != null) exitOn.dispose();
         if (creditsTex      != null) creditsTex.dispose();
+        if (settingsBgTex    != null) settingsBgTex.dispose();
         if (settingsPanelTex != null) settingsPanelTex.dispose();
         if (difficultyBgTex  != null) difficultyBgTex.dispose();
         if (easyOff      != null) easyOff.dispose();

@@ -28,16 +28,19 @@ class SettingsOverlay extends MenuOverlay {
     static final String PREFS = "abyssal_descent_settings";
 
     // ── sizing constants ──────────────────────────────────────────────────────
-    private static final float SLIDER_W  = 500f;
-    private static final float SLIDER_H  = 14f;
-    private static final float THUMB_R   = 14f;
-    private static final float LABEL_W   = 280f;
-    private static final float LABEL_GAP = 50f;   // gap between label column and slider
-    private static final float VALUE_GAP = 20f;   // gap between slider end and value text
-    private static final float ROW_H     = 100f;  // vertical distance between rows
-    private static final float BTN_W     = 500f;
-    private static final float BTN_H     = 150f;
-    private static final float MARGIN    = 40f;
+    private static final float SLIDER_W   = 500f;
+    private static final float SLIDER_H   = 14f;
+    private static final float THUMB_R    = 14f;
+    private static final float LABEL_W    = 280f;
+    private static final float LABEL_GAP  = 50f;
+    private static final float VALUE_GAP  = 20f;
+    private static final float ROW_H      = 120f;  // +20 px spacing between rows
+    private static final float CONTENT_DY = -35f;  // shift content down 35 px
+    private static final float BTN_W      = 500f;
+    private static final float BTN_H      = 150f;
+    private static final float FS_BTN_W   = 300f;  // fullscreen toggle: 300×125
+    private static final float FS_BTN_H   = 125f;
+    private static final float MARGIN     = 40f;
 
     // ── state ─────────────────────────────────────────────────────────────────
     float   masterVolume, musicVolume, sfxVolume;
@@ -82,8 +85,8 @@ class SettingsOverlay extends MenuOverlay {
         sliderX = labelX + LABEL_W + LABEL_GAP;
         valueX  = sliderX + SLIDER_W + VALUE_GAP;
 
-        // Content top: 58 % of screen height (slightly above centre)
-        float contentTop = py + ph * 0.68f;
+        // Content top shifted down by CONTENT_DY
+        float contentTop = py + ph * 0.68f + CONTENT_DY;
         sliderY = new float[]{
                 contentTop,
                 contentTop - ROW_H,
@@ -95,14 +98,14 @@ class SettingsOverlay extends MenuOverlay {
 
         fullscreenBtn = new MenuButton(
                 fullscreen ? "ON" : "OFF",
-                sliderX, toggleRowY - (BTN_H - SLIDER_H) / 2f,
-                BTN_W, BTN_H,
+                sliderX, toggleRowY - (FS_BTN_H - SLIDER_H) / 2f,
+                FS_BTN_W, FS_BTN_H,
                 this::toggleFullscreen);
 
-        // Back — bottom-right corner
+        // Back — bottom-left corner
         backBtn = new MenuButton(
                 "Back",
-                px + pw - BTN_W - MARGIN,
+                px + MARGIN,
                 py + MARGIN,
                 BTN_W, BTN_H,
                 onClose);
@@ -196,7 +199,7 @@ class SettingsOverlay extends MenuOverlay {
         }
 
         // Fullscreen label — aligned with the button
-        float toggleMidY = toggleRowY - (BTN_H - SLIDER_H) / 2f + BTN_H / 2f + 14f;
+        float toggleMidY = toggleRowY - (FS_BTN_H - SLIDER_H) / 2f + FS_BTN_H / 2f + 14f;
         font.setColor(1f, 1f, 1f, 1f);
         font.draw(batch, "Fullscreen", labelX, toggleMidY);
 
