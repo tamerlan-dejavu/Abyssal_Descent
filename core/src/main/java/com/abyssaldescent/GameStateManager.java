@@ -1,5 +1,6 @@
 package com.abyssaldescent;
 
+import com.abyssaldescent.config.DifficultySettings;
 import com.abyssaldescent.entity.player.CharacterType;
 import com.abyssaldescent.entity.player.PlayerSlot;
 import com.abyssaldescent.entity.player.PlayerStatus;
@@ -42,6 +43,12 @@ public final class GameStateManager {
 
         karinSlot.setStatus(newStatus);
         EventBus.getInstance().post(new PlayerStatusChangedEvent(character, previous, newStatus));
+    }
+
+    public void initWithDifficulty(DifficultySettings difficulty) {
+        int maxHp = Math.round(CharacterType.KARIN.getMaxHp() * difficulty.hpMultiplier);
+        karinSlot.setEffectiveMaxHp(maxHp);
+        karinSlot.setCurrentHp(maxHp);
     }
 
     public void resetForNewRun() {
