@@ -3,6 +3,7 @@ package com.abyssaldescent.ui.screen;
 import com.abyssaldescent.GameController;
 import com.abyssaldescent.GamePhase;
 import com.abyssaldescent.GameStateManager;
+import com.abyssaldescent.entity.player.CharacterType;
 import com.abyssaldescent.audio.MusicPlayer;
 import com.abyssaldescent.combat.CombatManager;
 import com.abyssaldescent.combat.chips.ChipInventory;
@@ -250,6 +251,9 @@ public class GameScreen implements Screen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             demoRespawns = Math.max(demoRespawns - 1, 0);
             EventBus.getInstance().post(new RespawnUsedEvent(demoRespawns, 3));
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.D)) {
+            controller.applyDamage(CharacterType.KARIN, 999);
         }
     }
 
