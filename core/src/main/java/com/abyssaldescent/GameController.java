@@ -23,9 +23,12 @@ public final class GameController {
     private final EventBus         eventBus;
     private GamePhase phase = GamePhase.MENU;
 
+    private static final float HIT_I_FRAMES = 0.8f;
+
     private int            respawnsRemaining = MAX_RESPAWNS;
     private PlayerMemento  savedMemento;
     private Player         playerRef;
+    private float          iFrameTimer = 0f;
 
     private final EventListener<DamageEvent> damageListener = this::onDamageEvent;
 
@@ -104,6 +107,16 @@ public final class GameController {
         eventBus.post(new HealthChangedEvent(slot.getCurrentHp(), slot.getMaxHp()));
     }
 
+    public void update(float dt) {
+        if (iFrameTimer > 0 && playerRef != null) {
+            iFrameTimer -= dt;
+            if (iFrameTimer <= 0) {
+                iFrameTimer = 0f;
+                playerRef.getContext().setInvincible(false);
+            }
+        }
+    }
+
     public void dispose() {
         eventBus.unsubscribe(DamageEvent.class, damageListener);
     }
@@ -118,9 +131,22 @@ public final class GameController {
         PlayerSlot slot = state.getKarinSlot();
         if (!slot.isActive() || slot.getStatus() == PlayerStatus.GHOST) return;
         if (slot.getStatus() == PlayerStatus.INVINCIBLE) return;
+        if (playerRef != null && playerRef.getContext().isInvincible()) return;
+        float mult = state.getEnemyDamageMultiplier();
+        if (mult != 1.0f) damage = Math.max(1, Math.round(damage * mult));
         slot.applyDamage(damage);
         eventBus.post(new HealthChangedEvent(slot.getCurrentHp(), slot.getMaxHp()));
-        if (slot.isDead()) handleDeath();
+        if (slot.isDead()) {
+            handleDeath();
+        } else {
+            startHitIFrames();
+        }
+    }
+
+    private void startHitIFrames() {
+        if (playerRef == null) return;
+        iFrameTimer = HIT_I_FRAMES;
+        playerRef.getContext().setInvincible(true);
     }
 
     private void handleDeath() {

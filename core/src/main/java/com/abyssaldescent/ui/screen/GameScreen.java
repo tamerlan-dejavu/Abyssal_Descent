@@ -13,6 +13,7 @@ import com.abyssaldescent.entity.enemy.EnemyFactory;
 import com.abyssaldescent.entity.enemy.EnemyType;
 import com.abyssaldescent.entity.player.Player;
 import com.abyssaldescent.entity.player.PlayerContext;
+import com.abyssaldescent.entity.player.PlayerEffectSystem;
 import com.abyssaldescent.entity.player.PlayerInputHandler;
 import com.abyssaldescent.entity.state.AttackingState;
 import com.abyssaldescent.event.EventBus;
@@ -67,10 +68,11 @@ public class GameScreen implements Screen {
     private final Map<String, SpriteOrientation> enemyOrientations = new HashMap<>();
     private final Map<String, Float>             enemyLastX        = new HashMap<>();
     private final MusicPlayer musicPlayer = new MusicPlayer();
-    private HudRenderer      hudRenderer;
-    private ChipInventory    chipInventory;
-    private ChipPickupSystem chipPickupSystem;
-    private GameController   controller;
+    private HudRenderer        hudRenderer;
+    private ChipInventory      chipInventory;
+    private ChipPickupSystem   chipPickupSystem;
+    private GameController     controller;
+    private PlayerEffectSystem playerEffectSystem;
     private EventListener<GamePhaseChangedEvent> phaseListener;
     private int demoKeys     = 0;
     private int demoRespawns = 3;
@@ -113,6 +115,8 @@ public class GameScreen implements Screen {
                 EventBus.getInstance(), player.getCombatStrategy());
         hudRenderer = new HudRenderer(chipInventory);
 
+        playerEffectSystem = new PlayerEffectSystem(player.getContext(), EventBus.getInstance());
+
         controller = new GameController();
         controller.startNewRun();
         controller.initPlayer(player);
@@ -132,6 +136,8 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         inputHandler.update();
         player.update(delta);
+        playerEffectSystem.update(delta);
+        controller.update(delta);
         clampPlayerToWorld();
 
         for (Enemy e : combatManager.getEnemies()) {
@@ -189,9 +195,10 @@ public class GameScreen implements Screen {
         if (enemySprites != null)    enemySprites.dispose();
         musicPlayer.dispose();
         if (combatManager != null)   combatManager.dispose();
-        if (chipPickupSystem != null) chipPickupSystem.dispose();
-        if (hudRenderer != null)     hudRenderer.dispose();
-        if (controller != null)      controller.dispose();
+        if (chipPickupSystem != null)    chipPickupSystem.dispose();
+        if (hudRenderer != null)         hudRenderer.dispose();
+        if (playerEffectSystem != null)  playerEffectSystem.dispose();
+        if (controller != null)          controller.dispose();
     }
 
     // ── input ────────────────────────────────────────────────────────────────
