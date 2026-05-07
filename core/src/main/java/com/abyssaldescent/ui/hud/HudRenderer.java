@@ -21,9 +21,9 @@ public final class HudRenderer {
     private final BitmapFont         fontMedium;
     private final BitmapFont         fontSmall;
     private final StatusWindow       statusWindow;
+    private final MinimapWindow      minimapWindow;
     private final HudChipSlotWidget  chipSlots;
     private final KeyCounterWidget   keyCounter;
-    private final LevelIndicator     levelIndicator;
     private final InventoryScreen    inventoryScreen;
 
     public HudRenderer(ChipInventory chipInventory) {
@@ -36,10 +36,10 @@ public final class HudRenderer {
         fontSmall.getData().setScale(0.9f);
 
         statusWindow    = new StatusWindow(fontMedium, fontSmall);
+        minimapWindow   = new MinimapWindow(fontMedium, fontSmall);
         chipSlots       = new HudChipSlotWidget(fontSmall);
         chipInventory.addObserver(chipSlots);
         keyCounter      = new KeyCounterWidget(fontMedium);
-        levelIndicator  = new LevelIndicator(fontMedium);
         inventoryScreen = new InventoryScreen(chipInventory, fontMedium, fontSmall);
 
         updateCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -68,7 +68,7 @@ public final class HudRenderer {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
 
         statusWindow.renderShapes(shapes, 10f, sh - StatusWindow.H - 10f);
-        levelIndicator.renderShapes(shapes, sw / 2f - LevelIndicator.W / 2f, sh - 60f);
+        minimapWindow.renderShapes(shapes, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
         keyCounter.renderShapes(shapes, sw - KeyCounterWidget.W - 20f, sh - 60f);
         chipSlots.renderShapes(shapes, sw, sh);
 
@@ -80,7 +80,7 @@ public final class HudRenderer {
         batch.begin();
 
         statusWindow.renderText(batch, 10f, sh - StatusWindow.H - 10f);
-        levelIndicator.renderText(batch, sw / 2f - LevelIndicator.W / 2f, sh - 60f);
+        minimapWindow.renderText(batch, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
         keyCounter.renderText(batch, sw - KeyCounterWidget.W - 20f, sh - 60f);
         chipSlots.renderText(batch, sw, sh);
 
@@ -126,9 +126,9 @@ public final class HudRenderer {
         fontMedium.dispose();
         fontSmall.dispose();
         statusWindow.dispose();
+        minimapWindow.dispose();
         chipSlots.dispose();
         keyCounter.dispose();
-        levelIndicator.dispose();
         inventoryScreen.dispose();
     }
 }
