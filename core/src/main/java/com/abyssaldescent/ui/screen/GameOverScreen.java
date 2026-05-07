@@ -105,7 +105,7 @@ public final class GameOverScreen implements Screen {
         tierNameW = baseW * 1.75f;
         tierNameH = baseH * 1.75f;
         tierNameX = (sw - tierNameW) * 0.5f;
-        tierNameY = 50f;
+        tierNameY = buttonY + buttonH + 50f;
     }
 
     @Override
@@ -159,14 +159,20 @@ public final class GameOverScreen implements Screen {
 
     private void onReturnClicked() {
         try {
+            Gdx.app.log("GameOverScreen", "onReturnClicked() START");
             if (loseMusic != null) {
+                Gdx.app.log("GameOverScreen", "stopping music");
                 loseMusic.stop();
+                Gdx.app.log("GameOverScreen", "music stopped");
             }
+            Gdx.app.log("GameOverScreen", "resetting game state");
             GameStateManager.getInstance().resetForNewRun();
-            Gdx.app.log("GameOverScreen", "Navigating to main menu");
+            Gdx.app.log("GameOverScreen", "game state reset, calling showMainMenu");
             UiManager.getInstance().showMainMenu();
+            Gdx.app.log("GameOverScreen", "showMainMenu() completed");
         } catch (Exception e) {
             Gdx.app.error("GameOverScreen", "Error returning to menu", e);
+            e.printStackTrace();
         }
     }
 
@@ -177,7 +183,14 @@ public final class GameOverScreen implements Screen {
 
     @Override public void pause()  {}
     @Override public void resume() {}
-    @Override public void hide()   {}
+
+    @Override
+    public void hide() {
+        Gdx.app.log("GameOverScreen", "hide() called");
+        if (loseMusic != null) {
+            loseMusic.stop();
+        }
+    }
 
     @Override
     public void dispose() {

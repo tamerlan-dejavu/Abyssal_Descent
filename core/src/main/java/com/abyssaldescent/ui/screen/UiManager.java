@@ -55,12 +55,19 @@ public final class UiManager {
 
     private void navigate(Screen next) {
         try {
+            com.badlogic.gdx.Gdx.app.log("UiManager", "navigate() called with screen: " + next.getClass().getSimpleName());
             Screen prev = game.getScreen();
+            com.badlogic.gdx.Gdx.app.log("UiManager", "current screen: " + (prev != null ? prev.getClass().getSimpleName() : "null"));
             game.setScreen(next);
-            if (prev != null) prev.dispose();
+            com.badlogic.gdx.Gdx.app.log("UiManager", "setScreen() completed");
+            if (prev != null) {
+                com.badlogic.gdx.Gdx.app.log("UiManager", "disposing previous screen");
+                prev.dispose();
+                com.badlogic.gdx.Gdx.app.log("UiManager", "previous screen disposed");
+            }
         } catch (Exception e) {
             com.badlogic.gdx.Gdx.app.error("UiManager", "Navigation error", e);
-            throw e;
+            e.printStackTrace();
         }
     }
 
