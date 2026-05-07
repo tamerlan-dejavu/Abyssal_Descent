@@ -2,12 +2,9 @@ package com.abyssaldescent.ui.screen;
 
 import com.abyssaldescent.config.DifficultySettings;
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 
-/**
- * Singleton facade that owns all screen-navigation logic.
- * Call {@link #init(Game)} once from {@code GameApp.create()}.
- */
 public final class UiManager {
 
     private static UiManager instance;
@@ -20,39 +17,57 @@ public final class UiManager {
         return instance;
     }
 
-    /** Must be called before any navigation method. */
     public void init(Game game) {
         this.game = game;
     }
 
     public void showMainMenu() {
-        navigate(new MainMenuScreen());
+        navigateTo(new MainMenuScreen());
     }
 
     public void showDifficulty() {
-        navigate(new DifficultyScreen());
+        navigateTo(new DifficultyScreen());
     }
 
     public void showSettings() {
-        navigate(new SettingsScreen());
+        navigateTo(new SettingsScreen());
     }
 
     public void startNewGame(DifficultySettings difficulty) {
-        navigate(new GameScreen(difficulty));
+        navigateTo(new GameScreen(difficulty));
     }
 
     public void continueGame() {
-        navigate(new GameScreen(DifficultySettings.NORMAL));
+        navigateTo(new GameScreen(DifficultySettings.NORMAL));
+    }
+
+    public void showGameOver(GameOverStats stats) {
+        navigateTo(new GameOverScreen(stats));
     }
 
     public void showGameOver() {
-        navigate(new GameOverScreen());
+        navigateTo(new GameOverScreen(new GameOverStats(1, 0, 3)));
     }
 
-    private void navigate(Screen next) {
-        Screen prev = game.getScreen();
-        game.setScreen(next);
-        if (prev != null) prev.dispose();
+    public void showEnding(RunStats stats) {
+        navigateTo(new EndingScreen(stats));
+    }
+
+    /**
+     * Posts navigation to the next frame via Gdx.app.postRunnable so it never
+     * runs inside an active render() call, eliminating use-after-dispose crashes.
+     */
+    private void navigateTo(final Screen next) {
+        Gdx.app.postRunnable(new Runnable() {
+            @Override
+            public void run() {
+                Screen prev = game.getScreen();
+                game.setScreen(next);
+                if (prev != null) {
+                    prev.dispose();
+                }
+            }
+        });
     }
 
     static void resetInstance() {

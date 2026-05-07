@@ -1,7 +1,7 @@
-package com.abyssaldescent.core.save;
+package com.abyssaldescent.ui.screen;
 
-import com.abyssaldescent.event.EventBus;
-import com.abyssaldescent.event.GameEvent;
+import com.abyssaldescent.event.TypedEvent;
+import com.abyssaldescent.event.TypedEventBus;
 
 public class RunStats {
 
@@ -9,43 +9,33 @@ public class RunStats {
     private int   currentFloor  = 1;
     private int   enemiesKilled = 0;
     private int   chipsCollected = 0;
-
     private boolean active = true;
 
-
-    public RunStats(EventBus eventBus) {
-        // Observer: враг погиб
-        eventBus.subscribe(GameEvent.Type.ENEMY_DIED, e -> {
+    public RunStats(TypedEventBus eventBus) {
+        eventBus.subscribe(TypedEvent.Type.ENEMY_DIED, e -> {
             if (active) enemiesKilled++;
         });
-
-        // Observer: чип подобран
-        eventBus.subscribe(GameEvent.Type.CHIP_COLLECTED, e -> {
+        eventBus.subscribe(TypedEvent.Type.CHIP_COLLECTED, e -> {
             if (active) chipsCollected++;
         });
-
-        // Observer: переход на следующий ярус
-        eventBus.subscribe(GameEvent.Type.FLOOR_CHANGED, e -> {
-            if (active) currentFloor = (int) e.getPayload();
+        eventBus.subscribe(TypedEvent.Type.FLOOR_CHANGED, e -> {
+            if (active && e.getPayload() instanceof Integer) {
+                currentFloor = (Integer) e.getPayload();
+            }
         });
-
-        // Стоп-таймер при финале
-        eventBus.subscribe(GameEvent.Type.GAME_OVER,    e -> active = false);
-        eventBus.subscribe(GameEvent.Type.BOSS_DEFEATED, e -> active = false);
+        eventBus.subscribe(TypedEvent.Type.GAME_OVER,     e -> active = false);
+        eventBus.subscribe(TypedEvent.Type.BOSS_DEFEATED, e -> active = false);
     }
-
 
     public void update(float delta) {
         if (active) runTimeSeconds += delta;
     }
-
 
     public float getRunTimeSeconds()  { return runTimeSeconds; }
     public int   getCurrentFloor()    { return currentFloor; }
     public int   getEnemiesKilled()   { return enemiesKilled; }
     public int   getChipsCollected()  { return chipsCollected; }
 
-    /** Форматированное время "MM:SS" для отображения на экране. */
     public String getFormattedTime() {
         int totalSec = (int) runTimeSeconds;
         int minutes  = totalSec / 60;
@@ -53,7 +43,6 @@ public class RunStats {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
-    /** Сбросить для нового забега. */
     public void reset() {
         runTimeSeconds = 0f;
         currentFloor   = 1;

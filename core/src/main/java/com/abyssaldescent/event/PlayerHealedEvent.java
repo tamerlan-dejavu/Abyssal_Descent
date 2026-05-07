@@ -1,8 +1,6 @@
-package com.abyssaldescent.event.events;
+package com.abyssaldescent.event;
 
-import com.abyssaldescent.event.GameEvent;
-
-public class PlayerHealedEvent extends GameEvent {
+public final class PlayerHealedEvent extends GameEvent {
     private final int   amount;
     private final int   currentHp;
     private final int   maxHp;
@@ -11,7 +9,6 @@ public class PlayerHealedEvent extends GameEvent {
 
     public PlayerHealedEvent(int amount, int currentHp, int maxHp,
                              float worldX, float worldY) {
-        super();
         this.amount    = amount;
         this.currentHp = currentHp;
         this.maxHp     = maxHp;

@@ -177,9 +177,11 @@ public final class GameController {
         }
     }
 
-    public GamePhase getPhase()         { return phase; }
-    public GameStateManager getState()  { return state; }
-    public boolean isRunActive()        { return phase == GamePhase.PLAYING || phase == GamePhase.PAUSED; }
+    public GamePhase getPhase()             { return phase; }
+    public GameStateManager getState()      { return state; }
+    public boolean isRunActive()            { return phase == GamePhase.PLAYING || phase == GamePhase.PAUSED; }
+    public int getRespawnsRemaining()       { return respawnsRemaining; }
+    public int getMaxRespawns()             { return MAX_RESPAWNS; }
 
     private static String tierName(int floor) {
         switch (floor) {

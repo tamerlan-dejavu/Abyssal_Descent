@@ -3,6 +3,7 @@ package com.abyssaldescent.lwjgl3;
 import com.badlogic.gdx.Graphics;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3WindowAdapter;
 import com.abyssaldescent.ui.GameApp;
 
 import java.util.ArrayList;
@@ -26,6 +27,12 @@ public class Lwjgl3Launcher {
         int refreshRate = primary.refreshRate;
         configuration.setForegroundFPS(refreshRate > 0 ? refreshRate + 1 : 60);
         configuration.setFullscreenMode(primary);
+        configuration.setWindowListener(new Lwjgl3WindowAdapter() {
+            @Override
+            public boolean closeRequested() {
+                return false;
+            }
+        });
         applyWindowIconIfAvailable(configuration, "libgdx128.png", "libgdx64.png", "libgdx32.png", "libgdx16.png");
         return configuration;
     }

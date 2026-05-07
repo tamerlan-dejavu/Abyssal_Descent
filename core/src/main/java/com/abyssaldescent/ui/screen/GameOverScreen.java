@@ -4,56 +4,141 @@ import com.abyssaldescent.GameStateManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.audio.Music;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public final class GameOverScreen implements Screen {
 
-    private final SpriteBatch batch;
-    private final BitmapFont  fontLarge;
-    private final BitmapFont  fontSmall;
+    private final GameOverStats stats;
 
-    public GameOverScreen() {
-        batch     = new SpriteBatch();
-        fontLarge = new BitmapFont();
-        fontLarge.getData().setScale(4f);
-        fontSmall = new BitmapFont();
-        fontSmall.getData().setScale(1.8f);
+    private SpriteBatch batch;
+    private Music       loseMusic;
+
+    private Texture backgroundTexture;
+    private Texture tierNameTexture;
+    private Texture buttonOffTexture;
+    private Texture buttonOnTexture;
+
+    private float   buttonX, buttonY;
+    private float   buttonW = 500f;
+    private float   buttonH = 150f;
+    private float   tierNameX, tierNameY, tierNameW, tierNameH;
+
+    private boolean buttonHovered = false;
+    private boolean navigating    = false;
+
+    public GameOverScreen(GameOverStats stats) {
+        this.stats = stats;
     }
 
+    // ── lifecycle ─────────────────────────────────────────────────────────────
+
     @Override
-    public void show() {}
+    public void show() {
+        batch = new SpriteBatch();
+        backgroundTexture = loadTexture("ui/backgrounds/death-screen.jpg");
+        tierNameTexture   = loadTexture(tierPath(stats.floorReached));
+        buttonOffTexture  = loadTexture("ui/buttons/back_to_menu_off.png");
+        buttonOnTexture   = loadTexture("ui/buttons/back_to_menu_on.png");
+        loadMusic();
+        layout();
+        Gdx.input.setInputProcessor(null);
+    }
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(0.05f, 0f, 0.08f, 1f);
+        if (navigating) return;
+
         float sw = Gdx.graphics.getWidth();
         float sh = Gdx.graphics.getHeight();
-        batch.begin();
-        fontLarge.setColor(Color.RED);
-        fontLarge.draw(batch, "GAME  OVER", sw * 0.5f - 180f, sh * 0.5f + 60f);
-        fontSmall.setColor(Color.LIGHT_GRAY);
-        fontSmall.draw(batch, "Press  ENTER  to  return  to  menu",
-                sw * 0.5f - 240f, sh * 0.5f - 30f);
-        batch.end();
+        float mx = Gdx.input.getX();
+        float my = sh - Gdx.input.getY();
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+        buttonHovered = mx >= buttonX && mx <= buttonX + buttonW
+                     && my >= buttonY && my <= buttonY + buttonH;
+
+        boolean clicked = (Gdx.input.justTouched() && buttonHovered)
+                       || Gdx.input.isKeyJustPressed(Input.Keys.ENTER);
+
+        if (clicked) {
+            navigating = true;
+            stopMusic();
             GameStateManager.getInstance().resetForNewRun();
             UiManager.getInstance().showMainMenu();
+            return;
         }
+
+        ScreenUtils.clear(0, 0, 0, 1f);
+        batch.begin();
+        if (backgroundTexture != null) batch.draw(backgroundTexture, 0, 0, sw, sh);
+        if (tierNameTexture   != null) batch.draw(tierNameTexture,   tierNameX, tierNameY, tierNameW, tierNameH);
+        Texture btn = buttonHovered && buttonOnTexture != null ? buttonOnTexture : buttonOffTexture;
+        if (btn != null) batch.draw(btn, buttonX, buttonY, buttonW, buttonH);
+        batch.end();
     }
 
-    @Override public void resize(int w, int h) {}
+    @Override
+    public void resize(int w, int h) { layout(); }
+
     @Override public void pause()  {}
     @Override public void resume() {}
-    @Override public void hide()   {}
+    @Override public void hide()   { stopMusic(); }
 
     @Override
     public void dispose() {
-        batch.dispose();
-        fontLarge.dispose();
-        fontSmall.dispose();
+        stopMusic();
+        if (loseMusic         != null) { loseMusic.dispose();         loseMusic         = null; }
+        if (batch             != null) { batch.dispose();             batch             = null; }
+        if (backgroundTexture != null) { backgroundTexture.dispose(); backgroundTexture = null; }
+        if (tierNameTexture   != null) { tierNameTexture.dispose();   tierNameTexture   = null; }
+        if (buttonOffTexture  != null) { buttonOffTexture.dispose();  buttonOffTexture  = null; }
+        if (buttonOnTexture   != null) { buttonOnTexture.dispose();   buttonOnTexture   = null; }
+    }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
+
+    private void layout() {
+        float sw = Gdx.graphics.getWidth();
+        buttonW = 500f; buttonH = 150f;
+        buttonX = (sw - buttonW) * 0.5f;
+        buttonY = 80f;
+        tierNameW = 750f; tierNameH = 175f;
+        tierNameX = (sw - tierNameW) * 0.5f;
+        tierNameY = buttonY + buttonH + 60f;
+    }
+
+    private void stopMusic() {
+        if (loseMusic != null && loseMusic.isPlaying()) loseMusic.stop();
+    }
+
+    private void loadMusic() {
+        try {
+            if (Gdx.files.internal("ui/sounds/lose.mp3").exists()) {
+                loseMusic = Gdx.audio.newMusic(Gdx.files.internal("ui/sounds/lose.mp3"));
+                loseMusic.setLooping(true);
+                loseMusic.play();
+            }
+        } catch (Exception e) {
+            Gdx.app.error("GameOverScreen", "music load failed", e);
+        }
+    }
+
+    private Texture loadTexture(String path) {
+        try {
+            if (Gdx.files.internal(path).exists()) return new Texture(path);
+        } catch (Exception e) {
+            Gdx.app.error("GameOverScreen", "texture load failed: " + path, e);
+        }
+        return null;
+    }
+
+    private static String tierPath(int floor) {
+        switch (floor) {
+            case 2:  return "ui/buttons/flooded_catacombs.png";
+            case 3:  return "ui/buttons/maltarions_abyss.png";
+            default: return "ui/buttons/upper_ruins.png";
+        }
     }
 }

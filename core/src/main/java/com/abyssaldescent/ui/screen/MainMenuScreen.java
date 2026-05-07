@@ -104,19 +104,20 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void show() {
-        camera = new OrthographicCamera();
-        batch  = new SpriteBatch();
-        shapes = new ShapeRenderer();
-        font   = new BitmapFont();
-        font.getData().setScale(3f);
+        try {
+            camera = new OrthographicCamera();
+            batch  = new SpriteBatch();
+            shapes = new ShapeRenderer();
+            font   = new BitmapFont();
+            font.getData().setScale(3f);
 
-        loadAllTextures();
-        startMusic();
+            loadAllTextures();
+            startMusic();
 
-        settingsOverlay   = new SettingsOverlay(settingsPanelTex, this::closeOverlay);
-        difficultyOverlay = new DifficultyOverlay(difficultyBgTex,
-                easyOff,    easyOn,
-                normalOff,  normalOn,
+            settingsOverlay   = new SettingsOverlay(settingsPanelTex, this::closeOverlay);
+            difficultyOverlay = new DifficultyOverlay(difficultyBgTex,
+                    easyOff,    easyOn,
+                    normalOff,  normalOn,
                 hardOff,    hardOn,
                 diffBackOff, diffBackOn,
                 this::closeOverlay);
@@ -150,10 +151,16 @@ public class MainMenuScreen implements Screen {
                 return false;
             }
         });
+        } catch (Exception e) {
+            Gdx.app.error("MainMenuScreen", "Error in show()", e);
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void render(float delta) {
+        if (buttons == null || batch == null) return;
+
         int sw = Gdx.graphics.getWidth();
         int sh = Gdx.graphics.getHeight();
 
