@@ -2,58 +2,141 @@ package com.abyssaldescent.ui.screen;
 
 import com.abyssaldescent.GameStateManager;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public final class GameOverScreen implements Screen {
 
-    private final SpriteBatch batch;
-    private final BitmapFont  fontLarge;
-    private final BitmapFont  fontSmall;
+    private static final Color BG_DARK    = new Color(0.04f, 0.00f, 0.06f, 1f);
+    private static final Color TITLE_RED  = new Color(0.80f, 0.08f, 0.08f, 1f);
+    private static final Color PANEL_FILL = new Color(0.08f, 0.04f, 0.10f, 0.85f);
 
-    public GameOverScreen() {
-        batch     = new SpriteBatch();
-        fontLarge = new BitmapFont();
-        fontLarge.getData().setScale(4f);
-        fontSmall = new BitmapFont();
-        fontSmall.getData().setScale(1.8f);
+    private static final float PANEL_W = 700f;
+    private static final float PANEL_H = 420f;
+
+    private final GameOverStats stats;
+
+    private SpriteBatch   batch;
+    private ShapeRenderer shapes;
+    private BitmapFont    fontTitle;
+    private BitmapFont    fontBody;
+    private GlyphLayout   layout;
+
+    private MenuButton returnButton;
+
+    public GameOverScreen(GameOverStats stats) {
+        this.stats = stats;
     }
 
     @Override
-    public void show() {}
+    public void show() {
+        batch  = new SpriteBatch();
+        shapes = new ShapeRenderer();
+        layout = new GlyphLayout();
+
+        fontTitle = new BitmapFont();
+        fontTitle.getData().setScale(3.2f);
+
+        fontBody = new BitmapFont();
+        fontBody.getData().setScale(1.5f);
+
+        float sw = Gdx.graphics.getWidth();
+        float sh = Gdx.graphics.getHeight();
+
+        float btnW = 320f;
+        float btnH = 70f;
+        float btnX = (sw - btnW) * 0.5f;
+        float panelY = (sh - PANEL_H) * 0.5f;
+        float btnY = panelY + 40f;
+
+        returnButton = new MenuButton(
+                "RETURN TO MENU",
+                btnX, btnY, btnW, btnH,
+                () -> {
+                    GameStateManager.getInstance().resetForNewRun();
+                    UiManager.getInstance().showMainMenu();
+                }
+        );
+    }
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(0.05f, 0f, 0.08f, 1f);
+        ScreenUtils.clear(BG_DARK.r, BG_DARK.g, BG_DARK.b, 1f);
+
         float sw = Gdx.graphics.getWidth();
         float sh = Gdx.graphics.getHeight();
-        batch.begin();
-        fontLarge.setColor(Color.RED);
-        fontLarge.draw(batch, "GAME  OVER", sw * 0.5f - 180f, sh * 0.5f + 60f);
-        fontSmall.setColor(Color.LIGHT_GRAY);
-        fontSmall.draw(batch, "Press  ENTER  to  return  to  menu",
-                sw * 0.5f - 240f, sh * 0.5f - 30f);
-        batch.end();
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-            GameStateManager.getInstance().resetForNewRun();
-            UiManager.getInstance().showMainMenu();
+        float mx = Gdx.input.getX();
+        float my = sh - Gdx.input.getY();
+        returnButton.update(mx, my);
+
+        if (Gdx.input.justTouched()) {
+            returnButton.handleClick(mx, my);
         }
+
+        float panelX = (sw - PANEL_W) * 0.5f;
+        float panelY = (sh - PANEL_H) * 0.5f;
+
+        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+                           com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        shapes.setColor(PANEL_FILL);
+        shapes.rect(panelX, panelY, PANEL_W, PANEL_H);
+        returnButton.renderBackground(shapes);
+        shapes.end();
+
+        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+
+        batch.begin();
+
+        fontTitle.setColor(TITLE_RED);
+        layout.setText(fontTitle, "VOID CLAIMS YOU");
+        float titleX = (sw - layout.width) * 0.5f;
+        float titleY = panelY + PANEL_H - 50f;
+        fontTitle.draw(batch, layout, titleX, titleY);
+
+        drawStats(sw, panelY);
+
+        returnButton.renderLabel(batch, fontBody);
+
+        batch.end();
     }
 
-    @Override public void resize(int w, int h) {}
+    private void drawStats(float sw, float panelY) {}
+
+    @Override
+    public void resize(int w, int h) {
+        float btnW = 320f;
+        float btnH = 70f;
+        float btnX = (w - btnW) * 0.5f;
+        float panelY = (h - PANEL_H) * 0.5f;
+        float btnY   = panelY + 40f;
+        returnButton = new MenuButton(
+                "RETURN TO MENU",
+                btnX, btnY, btnW, btnH,
+                () -> {
+                    GameStateManager.getInstance().resetForNewRun();
+                    UiManager.getInstance().showMainMenu();
+                }
+        );
+    }
+
     @Override public void pause()  {}
     @Override public void resume() {}
     @Override public void hide()   {}
 
     @Override
     public void dispose() {
-        batch.dispose();
-        fontLarge.dispose();
-        fontSmall.dispose();
+        if (batch     != null) batch.dispose();
+        if (shapes    != null) shapes.dispose();
+        if (fontTitle != null) fontTitle.dispose();
+        if (fontBody  != null) fontBody.dispose();
     }
 }
