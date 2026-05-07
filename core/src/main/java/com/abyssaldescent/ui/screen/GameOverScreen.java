@@ -32,6 +32,7 @@ public final class GameOverScreen implements Screen {
     private float tierNameH;
 
     private boolean buttonHovered = false;
+    private boolean isHidden = false;
 
     public GameOverScreen(GameOverStats stats) {
         this.stats = stats;
@@ -110,6 +111,8 @@ public final class GameOverScreen implements Screen {
 
     @Override
     public void render(float delta) {
+        if (isHidden) return;
+
         ScreenUtils.clear(0, 0, 0, 1f);
 
         float sw = Gdx.graphics.getWidth();
@@ -187,6 +190,7 @@ public final class GameOverScreen implements Screen {
     @Override
     public void hide() {
         Gdx.app.log("GameOverScreen", "hide() called");
+        isHidden = true;
         if (loseMusic != null) {
             loseMusic.stop();
         }
