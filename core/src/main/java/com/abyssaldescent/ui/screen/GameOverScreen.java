@@ -109,7 +109,26 @@ public final class GameOverScreen implements Screen {
         batch.end();
     }
 
-    private void drawStats(float sw, float panelY) {}
+    private void drawStats(float sw, float panelY) {
+        fontBody.setColor(Color.LIGHT_GRAY);
+
+        String tierLine = "Tier reached:     " + tierName(stats.floorReached);
+        layout.setText(fontBody, tierLine);
+        fontBody.draw(batch, layout, (sw - layout.width) * 0.5f, panelY + PANEL_H - 130f);
+
+        String respLine = "Respawns used:  " + stats.respawnsUsed + " / " + stats.maxRespawns;
+        layout.setText(fontBody, respLine);
+        fontBody.draw(batch, layout, (sw - layout.width) * 0.5f, panelY + PANEL_H - 195f);
+    }
+
+    private static String tierName(int floor) {
+        switch (floor) {
+            case 1:  return "Upper Ruins";
+            case 2:  return "Sunken Crypts";
+            case 3:  return "Void Core";
+            default: return "Floor " + floor;
+        }
+    }
 
     @Override
     public void resize(int w, int h) {
