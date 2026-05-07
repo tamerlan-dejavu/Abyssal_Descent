@@ -8,6 +8,11 @@ import com.abyssaldescent.combat.CombatManager;
 import com.abyssaldescent.combat.chips.ChipInventory;
 import com.abyssaldescent.combat.chips.ChipPickupSystem;
 import com.abyssaldescent.config.DifficultySettings;
+import com.abyssaldescent.dungeon.Direction;
+import com.abyssaldescent.dungeon.Door;
+import com.abyssaldescent.dungeon.DungeonManager;
+import com.abyssaldescent.dungeon.Room;
+import com.abyssaldescent.dungeon.Tier;
 import com.abyssaldescent.entity.enemy.Enemy;
 import com.abyssaldescent.entity.enemy.EnemyFactory;
 import com.abyssaldescent.entity.enemy.EnemyType;
@@ -44,13 +49,14 @@ import java.util.Map;
 
 public class GameScreen implements Screen {
 
-    private static final float VIEWPORT_HEIGHT       = 9f;
-    private static final float VIEWPORT_WIDTH        = 16f;
-    private static final float SPRITE_SIZE           = 1f;
-    private static final float ENEMY_SIZE            = 0.9f;
-    private static final int   FLOOR_WIDTH           = 25;
-    private static final int   FLOOR_HEIGHT          = 25;
+    private static final float VIEWPORT_HEIGHT        = 9f;
+    private static final float VIEWPORT_WIDTH         = 16f;
+    private static final float SPRITE_SIZE            = 1f;
+    private static final float ENEMY_SIZE             = 0.9f;
+    private static final int   FLOOR_WIDTH            = 25;
+    private static final int   FLOOR_HEIGHT           = 25;
     private static final float ATTACK_WINDUP_FRACTION = 0.4f;
+    private static final float DOOR_TRIGGER_MARGIN    = 0.5f;
 
     private final DifficultySettings difficulty;
 
@@ -119,6 +125,8 @@ public class GameScreen implements Screen {
 
         playerEffectSystem = new PlayerEffectSystem(player.getContext(), EventBus.getInstance());
 
+        DungeonManager.getInstance().loadTier(Tier.UPPER_RUINS);
+
         controller = new GameController();
         controller.startNewRun();
         controller.initPlayer(player);
@@ -168,6 +176,8 @@ public class GameScreen implements Screen {
 
         fireDemoEvents();
         hudRenderer.render(batch, shapes, delta);
+
+        checkDoorTransitions();
 
         if (pendingGameOverStats != null) {
             UiManager.getInstance().showGameOver(pendingGameOverStats);
@@ -277,7 +287,48 @@ public class GameScreen implements Screen {
 
     private void drawFloorTiles() {
         batch.setColor(Color.WHITE);
-        batch.draw(floorTexture, 0, 0, FLOOR_WIDTH, FLOOR_HEIGHT);
+        Texture bg = DungeonManager.getInstance().getBackgroundTexture();
+        if (bg != null) {
+            batch.draw(bg, 0, 0, FLOOR_WIDTH, FLOOR_HEIGHT);
+        } else {
+            batch.draw(floorTexture, 0, 0, FLOOR_WIDTH, FLOOR_HEIGHT);
+        }
+    }
+
+    private void checkDoorTransitions() {
+        Room room = DungeonManager.getInstance().getCurrentRoom();
+        if (room == null) return;
+        float px = player.getX();
+        float py = player.getY();
+        for (Door door : room.getDoors()) {
+            if (isPlayerAtDoor(px, py, door.getDirection())) {
+                DungeonManager.getInstance().transitionTo(door.getToRoomId());
+                repositionPlayerAfterTransition(door.getDirection());
+                break;
+            }
+        }
+    }
+
+    private boolean isPlayerAtDoor(float px, float py, Direction dir) {
+        switch (dir) {
+            case NORTH: return py >= FLOOR_HEIGHT - DOOR_TRIGGER_MARGIN;
+            case SOUTH: return py <= DOOR_TRIGGER_MARGIN;
+            case EAST:  return px >= FLOOR_WIDTH  - DOOR_TRIGGER_MARGIN;
+            case WEST:  return px <= DOOR_TRIGGER_MARGIN;
+            default:    return false;
+        }
+    }
+
+    private void repositionPlayerAfterTransition(Direction enteredFrom) {
+        float cx = FLOOR_WIDTH / 2f;
+        float cy = FLOOR_HEIGHT / 2f;
+        switch (enteredFrom) {
+            case NORTH: player.getContext().setPosition(cx, DOOR_TRIGGER_MARGIN + SPRITE_SIZE); break;
+            case SOUTH: player.getContext().setPosition(cx, FLOOR_HEIGHT - DOOR_TRIGGER_MARGIN - SPRITE_SIZE); break;
+            case EAST:  player.getContext().setPosition(DOOR_TRIGGER_MARGIN + SPRITE_SIZE, cy); break;
+            case WEST:  player.getContext().setPosition(FLOOR_WIDTH - DOOR_TRIGGER_MARGIN - SPRITE_SIZE, cy); break;
+            default: break;
+        }
     }
 
     private void drawPlayer() {
