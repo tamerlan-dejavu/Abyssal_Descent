@@ -13,6 +13,7 @@ import com.abyssaldescent.event.GamePhaseChangedEvent;
 import com.abyssaldescent.event.HealthChangedEvent;
 import com.abyssaldescent.event.RespawnUsedEvent;
 import com.abyssaldescent.event.RoomChangedEvent;
+import com.badlogic.gdx.Gdx;
 
 public final class GameController {
     public static final int FIRST_FLOOR  = 1;
@@ -129,14 +130,26 @@ public final class GameController {
 
     private void applyDamageToPlayer(int damage) {
         PlayerSlot slot = state.getKarinSlot();
-        if (!slot.isActive() || slot.getStatus() == PlayerStatus.GHOST) return;
-        if (slot.getStatus() == PlayerStatus.INVINCIBLE) return;
-        if (playerRef != null && playerRef.getContext().isInvincible()) return;
+        Gdx.app.log("GameController", "applyDamageToPlayer: damage=" + damage + " slot.isDead=" + slot.isDead());
+        if (!slot.isActive() || slot.getStatus() == PlayerStatus.GHOST) {
+            Gdx.app.log("GameController", "  BLOCKED: slot not active or already ghost");
+            return;
+        }
+        if (slot.getStatus() == PlayerStatus.INVINCIBLE) {
+            Gdx.app.log("GameController", "  BLOCKED: player invincible");
+            return;
+        }
+        if (playerRef != null && playerRef.getContext().isInvincible()) {
+            Gdx.app.log("GameController", "  BLOCKED: playerRef invincible");
+            return;
+        }
         float mult = state.getEnemyDamageMultiplier();
         if (mult != 1.0f) damage = Math.max(1, Math.round(damage * mult));
+        Gdx.app.log("GameController", "  Applying damage: " + damage);
         slot.applyDamage(damage);
         eventBus.post(new HealthChangedEvent(slot.getCurrentHp(), slot.getMaxHp()));
         if (slot.isDead()) {
+            Gdx.app.log("GameController", "  Player is DEAD");
             handleDeath();
         } else {
             startHitIFrames();

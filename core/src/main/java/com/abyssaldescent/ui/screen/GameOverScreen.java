@@ -36,6 +36,8 @@ public final class GameOverScreen implements Screen {
 
     @Override
     public void show() {
+        Gdx.app.log("GameOverScreen", "SHOW called with stats: floor=" + stats.floorReached +
+                    " respUsed=" + stats.respawnsUsed);
         Gdx.input.setInputProcessor(null);
 
         batch  = new SpriteBatch();

@@ -125,9 +125,11 @@ public class GameScreen implements Screen {
 
         phaseListener = e -> {
             if (e.getNewPhase() == GamePhase.GAME_OVER) {
+                Gdx.app.log("GameScreen", "GAME_OVER phase triggered");
                 int floor       = controller.getState().getFloorNumber();
                 int respUsed    = controller.getMaxRespawns() - controller.getRespawnsRemaining();
                 int maxResp     = controller.getMaxRespawns();
+                Gdx.app.log("GameScreen", "Showing GameOver: floor=" + floor + " respUsed=" + respUsed);
                 UiManager.getInstance().showGameOver(new GameOverStats(floor, respUsed, maxResp));
             }
         };
@@ -252,7 +254,7 @@ public class GameScreen implements Screen {
             demoRespawns = Math.max(demoRespawns - 1, 0);
             EventBus.getInstance().post(new RespawnUsedEvent(demoRespawns, 3));
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.D)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
             controller.applyDamage(CharacterType.KARIN, 999);
         }
     }
