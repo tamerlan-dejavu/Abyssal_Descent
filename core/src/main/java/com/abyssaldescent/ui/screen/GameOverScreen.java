@@ -4,6 +4,7 @@ import com.abyssaldescent.GameStateManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -13,6 +14,7 @@ public final class GameOverScreen implements Screen {
     private final GameOverStats stats;
 
     private SpriteBatch batch;
+    private Music loseMusic;
 
     private Texture backgroundTexture;
     private Texture tierReachedLabelTexture;
@@ -43,7 +45,20 @@ public final class GameOverScreen implements Screen {
         batch = new SpriteBatch();
 
         loadTextures();
+        loadMusic();
         layoutElements();
+    }
+
+    private void loadMusic() {
+        try {
+            if (Gdx.files.internal("ui/sounds/lose.mp3").exists()) {
+                loseMusic = Gdx.audio.newMusic(Gdx.files.internal("ui/sounds/lose.mp3"));
+                loseMusic.setLooping(true);
+                loseMusic.play();
+            }
+        } catch (Exception e) {
+            Gdx.app.error("GameOverScreen", "Failed to load lose.mp3", e);
+        }
     }
 
     private void loadTextures() {
@@ -154,6 +169,9 @@ public final class GameOverScreen implements Screen {
     }
 
     private void onReturnClicked() {
+        if (loseMusic != null) {
+            loseMusic.stop();
+        }
         GameStateManager.getInstance().resetForNewRun();
         UiManager.getInstance().showMainMenu();
     }
@@ -169,6 +187,10 @@ public final class GameOverScreen implements Screen {
 
     @Override
     public void dispose() {
+        if (loseMusic != null) {
+            loseMusic.stop();
+            loseMusic.dispose();
+        }
         if (batch != null) batch.dispose();
         if (backgroundTexture != null) backgroundTexture.dispose();
         if (tierReachedLabelTexture != null) tierReachedLabelTexture.dispose();
