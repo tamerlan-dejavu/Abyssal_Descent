@@ -5,30 +5,30 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.ScreenUtils;
 
 public final class GameOverScreen implements Screen {
 
-    private static final Color BG_DARK    = new Color(0.04f, 0.00f, 0.06f, 1f);
-    private static final Color TITLE_RED  = new Color(0.80f, 0.08f, 0.08f, 1f);
-    private static final Color PANEL_FILL = new Color(0.08f, 0.04f, 0.10f, 0.85f);
-
-    private static final float PANEL_W = 700f;
-    private static final float PANEL_H = 420f;
-
     private final GameOverStats stats;
 
     private SpriteBatch   batch;
-    private ShapeRenderer shapes;
-    private BitmapFont    fontTitle;
-    private BitmapFont    fontBody;
+    private BitmapFont    fontTier;
     private GlyphLayout   layout;
 
-    private MenuButton returnButton;
+    private Texture backgroundTexture;
+    private Texture buttonOffTexture;
+    private Texture buttonOnTexture;
+
+    private float buttonX;
+    private float buttonY;
+    private float buttonW;
+    private float buttonH;
+
+    private boolean buttonHovered = false;
 
     public GameOverScreen(GameOverStats stats) {
         this.stats = stats;
@@ -36,102 +36,97 @@ public final class GameOverScreen implements Screen {
 
     @Override
     public void show() {
-        Gdx.app.log("GameOverScreen", "SHOW called with stats: floor=" + stats.floorReached +
-                    " respUsed=" + stats.respawnsUsed);
         Gdx.input.setInputProcessor(null);
 
         batch  = new SpriteBatch();
-        shapes = new ShapeRenderer();
         layout = new GlyphLayout();
 
-        fontTitle = new BitmapFont();
-        fontTitle.getData().setScale(3.2f);
-
-        fontBody = new BitmapFont();
-        fontBody.getData().setScale(1.5f);
+        fontTier = new BitmapFont();
+        fontTier.getData().setScale(2.0f);
 
         float sw = Gdx.graphics.getWidth();
-        float sh = Gdx.graphics.getHeight();
 
-        float btnW = 320f;
-        float btnH = 70f;
-        float btnX = (sw - btnW) * 0.5f;
-        float panelY = (sh - PANEL_H) * 0.5f;
-        float btnY = panelY + 40f;
+        loadTextures();
 
-        returnButton = new MenuButton(
-                "RETURN TO MENU",
-                btnX, btnY, btnW, btnH,
-                () -> {
-                    GameStateManager.getInstance().resetForNewRun();
-                    UiManager.getInstance().showMainMenu();
-                }
-        );
+        buttonW = 400f;
+        buttonH = 120f;
+        buttonX = (sw - buttonW) * 0.5f;
+        buttonY = 80f;
+    }
+
+    private void loadTextures() {
+        backgroundTexture = loadTexture("ui/backgrounds/death-screen.jpg");
+        buttonOffTexture  = loadTexture("ui/buttons/back_to_menu_off.png");
+        buttonOnTexture   = loadTexture("ui/buttons/back_to_menu_on.png");
+    }
+
+    private Texture loadTexture(String path) {
+        try {
+            if (Gdx.files.internal(path).exists()) {
+                return new Texture(path);
+            }
+        } catch (Exception e) {
+            Gdx.app.error("GameOverScreen", "Failed to load " + path, e);
+        }
+        return null;
     }
 
     @Override
     public void render(float delta) {
-        ScreenUtils.clear(BG_DARK.r, BG_DARK.g, BG_DARK.b, 1f);
+        ScreenUtils.clear(0, 0, 0, 1f);
 
         float sw = Gdx.graphics.getWidth();
         float sh = Gdx.graphics.getHeight();
 
         float mx = Gdx.input.getX();
         float my = sh - Gdx.input.getY();
-        returnButton.update(mx, my);
+
+        buttonHovered = mx >= buttonX && mx <= buttonX + buttonW &&
+                       my >= buttonY && my <= buttonY + buttonH;
 
         if (Gdx.input.justTouched()) {
-            returnButton.handleClick(mx, my);
+            if (buttonHovered) {
+                onReturnClicked();
+            }
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
-            GameStateManager.getInstance().resetForNewRun();
-            UiManager.getInstance().showMainMenu();
+            onReturnClicked();
             return;
         }
 
-        float panelX = (sw - PANEL_W) * 0.5f;
-        float panelY = (sh - PANEL_H) * 0.5f;
-
-        Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
-        Gdx.gl.glBlendFunc(com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
-                           com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA);
-
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(PANEL_FILL);
-        shapes.rect(panelX, panelY, PANEL_W, PANEL_H);
-        shapes.setColor(0.35f, 0.15f, 0.40f, 0.9f);
-        shapes.rect(panelX + 40f, panelY + 130f, PANEL_W - 80f, 2f);
-        returnButton.renderBackground(shapes);
-        shapes.end();
-
-        Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
-
         batch.begin();
 
-        fontTitle.setColor(TITLE_RED);
-        layout.setText(fontTitle, "VOID CLAIMS YOU");
-        float titleX = (sw - layout.width) * 0.5f;
-        float titleY = panelY + PANEL_H - 50f;
-        fontTitle.draw(batch, layout, titleX, titleY);
+        if (backgroundTexture != null) {
+            batch.draw(backgroundTexture, 0, 0, sw, sh);
+        }
 
-        drawStats(sw, panelY);
+        drawTierText(sw, sh);
 
-        returnButton.renderLabel(batch, fontBody);
+        drawButton();
 
         batch.end();
     }
 
-    private void drawStats(float sw, float panelY) {
-        fontBody.setColor(Color.LIGHT_GRAY);
+    private void drawTierText(float sw, float sh) {
+        String tierText = "Tier reached: " + tierName(stats.floorReached);
+        fontTier.setColor(Color.WHITE);
+        layout.setText(fontTier, tierText);
+        float textX = (sw - layout.width) * 0.5f;
+        float textY = sh - 120f;
+        fontTier.draw(batch, layout, textX, textY);
+    }
 
-        String tierLine = "Tier reached:     " + tierName(stats.floorReached);
-        layout.setText(fontBody, tierLine);
-        fontBody.draw(batch, layout, (sw - layout.width) * 0.5f, panelY + PANEL_H - 130f);
+    private void drawButton() {
+        Texture buttonTex = buttonHovered ? buttonOnTexture : buttonOffTexture;
+        if (buttonTex != null) {
+            batch.draw(buttonTex, buttonX, buttonY, buttonW, buttonH);
+        }
+    }
 
-        String respLine = "Respawns used:  " + stats.respawnsUsed + " / " + stats.maxRespawns;
-        layout.setText(fontBody, respLine);
-        fontBody.draw(batch, layout, (sw - layout.width) * 0.5f, panelY + PANEL_H - 195f);
+    private void onReturnClicked() {
+        GameStateManager.getInstance().resetForNewRun();
+        UiManager.getInstance().showMainMenu();
     }
 
     private static String tierName(int floor) {
@@ -145,19 +140,10 @@ public final class GameOverScreen implements Screen {
 
     @Override
     public void resize(int w, int h) {
-        float btnW = 320f;
-        float btnH = 70f;
-        float btnX = (w - btnW) * 0.5f;
-        float panelY = (h - PANEL_H) * 0.5f;
-        float btnY   = panelY + 40f;
-        returnButton = new MenuButton(
-                "RETURN TO MENU",
-                btnX, btnY, btnW, btnH,
-                () -> {
-                    GameStateManager.getInstance().resetForNewRun();
-                    UiManager.getInstance().showMainMenu();
-                }
-        );
+        buttonW = 400f;
+        buttonH = 120f;
+        buttonX = (w - buttonW) * 0.5f;
+        buttonY = 80f;
     }
 
     @Override public void pause()  {}
@@ -166,9 +152,10 @@ public final class GameOverScreen implements Screen {
 
     @Override
     public void dispose() {
-        if (batch     != null) batch.dispose();
-        if (shapes    != null) shapes.dispose();
-        if (fontTitle != null) fontTitle.dispose();
-        if (fontBody  != null) fontBody.dispose();
+        if (batch != null) batch.dispose();
+        if (fontTier != null) fontTier.dispose();
+        if (backgroundTexture != null) backgroundTexture.dispose();
+        if (buttonOffTexture != null) buttonOffTexture.dispose();
+        if (buttonOnTexture != null) buttonOnTexture.dispose();
     }
 }

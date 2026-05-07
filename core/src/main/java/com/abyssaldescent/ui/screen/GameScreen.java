@@ -125,11 +125,9 @@ public class GameScreen implements Screen {
 
         phaseListener = e -> {
             if (e.getNewPhase() == GamePhase.GAME_OVER) {
-                Gdx.app.log("GameScreen", "GAME_OVER phase triggered");
                 int floor       = controller.getState().getFloorNumber();
                 int respUsed    = controller.getMaxRespawns() - controller.getRespawnsRemaining();
                 int maxResp     = controller.getMaxRespawns();
-                Gdx.app.log("GameScreen", "Showing GameOver: floor=" + floor + " respUsed=" + respUsed);
                 pendingGameOverStats = new GameOverStats(floor, respUsed, maxResp);
             }
         };
