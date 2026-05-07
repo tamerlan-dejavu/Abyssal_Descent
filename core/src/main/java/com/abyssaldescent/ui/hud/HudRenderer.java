@@ -20,11 +20,11 @@ public final class HudRenderer {
     private final OrthographicCamera hudCamera;
     private final BitmapFont         fontMedium;
     private final BitmapFont         fontSmall;
-    private final StatusWindow       statusWindow;
-    private final MinimapWindow      minimapWindow;
-    private final HudChipSlotWidget  chipSlots;
-    private final KeyCounterWidget   keyCounter;
-    private final InventoryScreen    inventoryScreen;
+    private final StatusWindow        statusWindow;
+    private final MinimapWindow       minimapWindow;
+    private final KeyInventoryWindow  keyInventory;
+    private final HudChipSlotWidget   chipSlots;
+    private final InventoryScreen     inventoryScreen;
 
     public HudRenderer(ChipInventory chipInventory) {
         hudCamera  = new OrthographicCamera();
@@ -37,9 +37,9 @@ public final class HudRenderer {
 
         statusWindow    = new StatusWindow(fontMedium, fontSmall);
         minimapWindow   = new MinimapWindow(fontMedium, fontSmall);
+        keyInventory    = new KeyInventoryWindow(fontMedium, fontSmall);
         chipSlots       = new HudChipSlotWidget(fontSmall);
         chipInventory.addObserver(chipSlots);
-        keyCounter      = new KeyCounterWidget(fontMedium);
         inventoryScreen = new InventoryScreen(chipInventory, fontMedium, fontSmall);
 
         updateCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
@@ -69,7 +69,7 @@ public final class HudRenderer {
 
         statusWindow.renderShapes(shapes, 10f, sh - StatusWindow.H - 10f);
         minimapWindow.renderShapes(shapes, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
-        keyCounter.renderShapes(shapes, sw - KeyCounterWidget.W - 20f, sh - 60f);
+        keyInventory.renderShapes(shapes, sw - KeyInventoryWindow.W - 10f, 10f);
         chipSlots.renderShapes(shapes, sw, sh);
 
         shapes.end();
@@ -81,7 +81,7 @@ public final class HudRenderer {
 
         statusWindow.renderText(batch, 10f, sh - StatusWindow.H - 10f);
         minimapWindow.renderText(batch, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
-        keyCounter.renderText(batch, sw - KeyCounterWidget.W - 20f, sh - 60f);
+        keyInventory.renderText(batch, sw - KeyInventoryWindow.W - 10f, 10f);
         chipSlots.renderText(batch, sw, sh);
 
         batch.end();
@@ -127,8 +127,8 @@ public final class HudRenderer {
         fontSmall.dispose();
         statusWindow.dispose();
         minimapWindow.dispose();
+        keyInventory.dispose();
         chipSlots.dispose();
-        keyCounter.dispose();
         inventoryScreen.dispose();
     }
 }
