@@ -93,13 +93,6 @@ public final class StatusWindow {
             shapes.rect(x, y + H - bw, W, bw);
             shapes.rect(x, y, bw, H);
             shapes.rect(x + W - bw, y, bw, H);
-        } else if (damageFade > 0f) {
-            float bw = 3f;
-            shapes.setColor(0.9f, 0.1f, 0.1f, damageFade * 0.8f);
-            shapes.rect(x, y, W, bw);
-            shapes.rect(x, y + H - bw, W, bw);
-            shapes.rect(x, y, bw, H);
-            shapes.rect(x + W - bw, y, bw, H);
         }
     }
 

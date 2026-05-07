@@ -17,7 +17,6 @@ public final class GameOverScreen implements Screen {
     private Music loseMusic;
 
     private Texture backgroundTexture;
-    private Texture tierReachedLabelTexture;
     private Texture tierNameTexture;
     private Texture buttonOffTexture;
     private Texture buttonOnTexture;
@@ -27,10 +26,10 @@ public final class GameOverScreen implements Screen {
     private float buttonW = 500f;
     private float buttonH = 150f;
 
-    private float tierLabelX;
-    private float tierLabelY;
     private float tierNameX;
     private float tierNameY;
+    private float tierNameW;
+    private float tierNameH;
 
     private boolean buttonHovered = false;
 
@@ -49,21 +48,8 @@ public final class GameOverScreen implements Screen {
         layoutElements();
     }
 
-    private void loadMusic() {
-        try {
-            if (Gdx.files.internal("ui/sounds/lose.mp3").exists()) {
-                loseMusic = Gdx.audio.newMusic(Gdx.files.internal("ui/sounds/lose.mp3"));
-                loseMusic.setLooping(true);
-                loseMusic.play();
-            }
-        } catch (Exception e) {
-            Gdx.app.error("GameOverScreen", "Failed to load lose.mp3", e);
-        }
-    }
-
     private void loadTextures() {
         backgroundTexture = loadTexture("ui/backgrounds/death-screen.jpg");
-        tierReachedLabelTexture = loadTexture("ui/buttons/tier_reached.png");
         tierNameTexture = loadTierNameTexture();
         buttonOffTexture = loadTexture("ui/buttons/back_to_menu_off.png");
         buttonOnTexture = loadTexture("ui/buttons/back_to_menu_on.png");
@@ -94,6 +80,18 @@ public final class GameOverScreen implements Screen {
         return null;
     }
 
+    private void loadMusic() {
+        try {
+            if (Gdx.files.internal("ui/sounds/lose.mp3").exists()) {
+                loseMusic = Gdx.audio.newMusic(Gdx.files.internal("ui/sounds/lose.mp3"));
+                loseMusic.setLooping(true);
+                loseMusic.play();
+            }
+        } catch (Exception e) {
+            Gdx.app.error("GameOverScreen", "Failed to load lose.mp3", e);
+        }
+    }
+
     private void layoutElements() {
         float sw = Gdx.graphics.getWidth();
 
@@ -102,14 +100,12 @@ public final class GameOverScreen implements Screen {
         buttonX = (sw - buttonW) * 0.5f;
         buttonY = 80f;
 
-        float tierLabelW = 300f;
-        float tierLabelH = 80f;
-        tierLabelX = (sw - tierLabelW) * 0.5f;
-        tierLabelY = buttonY + buttonH + 50f;
-
-        float tierNameW = 400f;
+        float baseW = 400f;
+        float baseH = 100f;
+        tierNameW = baseW * 1.75f;
+        tierNameH = baseH * 1.75f;
         tierNameX = (sw - tierNameW) * 0.5f;
-        tierNameY = tierLabelY + tierLabelH;
+        tierNameY = 50f;
     }
 
     @Override
@@ -142,22 +138,15 @@ public final class GameOverScreen implements Screen {
             batch.draw(backgroundTexture, 0, 0, sw, sh);
         }
 
-        drawTierLabel();
         drawTierName();
         drawButton();
 
         batch.end();
     }
 
-    private void drawTierLabel() {
-        if (tierReachedLabelTexture != null) {
-            batch.draw(tierReachedLabelTexture, tierLabelX, tierLabelY, 300f, 80f);
-        }
-    }
-
     private void drawTierName() {
         if (tierNameTexture != null) {
-            batch.draw(tierNameTexture, tierNameX, tierNameY, 400f, 100f);
+            batch.draw(tierNameTexture, tierNameX, tierNameY, tierNameW, tierNameH);
         }
     }
 
@@ -169,11 +158,16 @@ public final class GameOverScreen implements Screen {
     }
 
     private void onReturnClicked() {
-        if (loseMusic != null) {
-            loseMusic.stop();
+        try {
+            if (loseMusic != null) {
+                loseMusic.stop();
+            }
+            GameStateManager.getInstance().resetForNewRun();
+            Gdx.app.log("GameOverScreen", "Navigating to main menu");
+            UiManager.getInstance().showMainMenu();
+        } catch (Exception e) {
+            Gdx.app.error("GameOverScreen", "Error returning to menu", e);
         }
-        GameStateManager.getInstance().resetForNewRun();
-        UiManager.getInstance().showMainMenu();
     }
 
     @Override
@@ -193,7 +187,6 @@ public final class GameOverScreen implements Screen {
         }
         if (batch != null) batch.dispose();
         if (backgroundTexture != null) backgroundTexture.dispose();
-        if (tierReachedLabelTexture != null) tierReachedLabelTexture.dispose();
         if (tierNameTexture != null) tierNameTexture.dispose();
         if (buttonOffTexture != null) buttonOffTexture.dispose();
         if (buttonOnTexture != null) buttonOnTexture.dispose();
