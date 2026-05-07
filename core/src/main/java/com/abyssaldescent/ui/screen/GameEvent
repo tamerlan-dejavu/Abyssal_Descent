@@ -1,0 +1,46 @@
+package com.abyssaldescent.event;
+
+public class GameEvent {
+
+    public enum Type {
+        
+        CHIP_SPAWNED,
+        CHIP_COLLECTED,
+        CHIP_ACTIVATED,
+        CHIP_REPLACED,
+        INVENTORY_CLEARED,
+
+        
+        ENEMY_DIED,
+        ROOM_CLEARED,
+
+        
+        SCREEN_FLASH,
+        HUD_BANNER,
+        PLAY_SOUND,
+
+       
+        PLAYER_DAMAGED,      // payload: PlayerStats.DamageInfo
+        PLAYER_HEALED,       // payload: PlayerStats.DamageInfo
+        PLAYER_DIED,         // payload: int respawnsLeft
+        PLAYER_RESPAWNED,    // payload: int respawnsLeft
+        GAME_OVER,           // payload: null
+        BOSS_DEFEATED,       // payload: null  — Малтарион-Эхо убит
+        FLOOR_CHANGED,       // payload: int   — новый номер яруса (1, 2, 3)
+
+        // Keys
+        KEY_PICKED_UP,       // payload: String keyId
+        KEY_USED,            // payload: String doorId
+    }
+
+    private final Type type;
+    private final Object payload;
+
+    public GameEvent(Type type, Object payload) {
+        this.type    = type;
+        this.payload = payload;
+    }
+
+    public Type getType()      { return type; }
+    public Object getPayload() { return payload; }
+}

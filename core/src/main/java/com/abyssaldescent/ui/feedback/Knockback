@@ -1,0 +1,65 @@
+package com.abyssaldescent.ui.feedback;
+
+import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.GameEvent;
+
+
+public class Knockback {
+
+    private static final float DURATION      = 0.25f;   // сек отбрасывания
+    private static final float FORCE         = 120f;    // пикс/сек начальная сила
+    private static final float FRICTION      = 8f;      // коэффициент затухания (экспонента)
+
+    private float velX = 0f;
+    private float velY = 0f;
+    private float timer = 0f;
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public Knockback(EventBus eventBus) {
+        eventBus.subscribe(GameEvent.Type.PLAYER_DAMAGED, event -> {
+            var info = (KnockbackInfo) event.getPayload();
+            apply(info.directionX(), info.directionY());
+        });
+    }
+
+
+    public void update(float delta) {
+        if (timer <= 0) return;
+
+        timer -= delta;
+
+        // Затухание: скорость уменьшается экспоненциально
+        float decay = (float) Math.exp(-FRICTION * delta);
+        velX *= decay;
+        velY *= decay;
+
+        if (timer <= 0) {
+            velX = 0;
+            velY = 0;
+        }
+    }
+
+
+    public float getOffsetX(float delta) { return velX * delta; }
+    public float getOffsetY(float delta) { return velY * delta; }
+    public boolean isActive()            { return timer > 0; }
+
+
+    /**
+     * @param dirX  направление ОТ атакующего (+1 = вправо, -1 = влево)
+     * @param dirY  вертикальная составляющая (обычно 0 или небольшой подбросок)
+     */
+    private void apply(float dirX, float dirY) {
+        // Нормализуем вектор
+        float len = (float) Math.sqrt(dirX * dirX + dirY * dirY);
+        if (len > 0) { dirX /= len; dirY /= len; }
+
+        velX  = dirX * FORCE;
+        velY  = dirY * FORCE * 0.5f + 30f;   // небольшой подброс вверх
+        timer = DURATION;
+    }
+
+    public record KnockbackInfo(float directionX, float directionY,
+                                int amount, int currentHp, int maxHp,
+                                float worldX, float worldY) {}
+}

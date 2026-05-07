@@ -1,0 +1,42 @@
+package com.abyssaldescent.combat;
+
+import com.abyssaldescent.entity.Enemy;
+import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.events.EnemyDiedEvent;
+import com.abyssaldescent.event.events.RoomClearedEvent;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class RoomEnemyTracker {
+
+    private final EventBus eventBus;
+    private final Set<String> livingEnemyIds = new HashSet<>();
+    private String  currentRoomId;
+    private boolean roomAlreadyCleared = false;
+
+    public RoomEnemyTracker(EventBus eventBus) {
+        this.eventBus = eventBus;
+
+        eventBus.subscribe(EnemyDiedEvent.class, e -> {
+            livingEnemyIds.remove(e.getEnemyId());
+            if (!roomAlreadyCleared && livingEnemyIds.isEmpty()) {
+                fireRoomCleared();
+            }
+        });
+    }
+
+    public void onEnterRoom(String roomId, List<Enemy> enemies) {
+        currentRoomId      = roomId;
+        roomAlreadyCleared = false;
+        livingEnemyIds.clear();
+        for (Enemy e : enemies) livingEnemyIds.add(e.getId());
+        if (livingEnemyIds.isEmpty()) fireRoomCleared();
+    }
+
+    private void fireRoomCleared() {
+        roomAlreadyCleared = true;
+        eventBus.post(new RoomClearedEvent(currentRoomId));
+    }
+}

@@ -1,0 +1,27 @@
+package com.abyssaldescent.event.events;
+
+import com.abyssaldescent.event.GameEvent;
+
+public class PlayerHealedEvent extends GameEvent {
+    private final int   amount;
+    private final int   currentHp;
+    private final int   maxHp;
+    private final float worldX;
+    private final float worldY;
+
+    public PlayerHealedEvent(int amount, int currentHp, int maxHp,
+                             float worldX, float worldY) {
+        super();
+        this.amount    = amount;
+        this.currentHp = currentHp;
+        this.maxHp     = maxHp;
+        this.worldX    = worldX;
+        this.worldY    = worldY;
+    }
+
+    public int   getAmount()    { return amount; }
+    public int   getCurrentHp() { return currentHp; }
+    public int   getMaxHp()     { return maxHp; }
+    public float getWorldX()    { return worldX; }
+    public float getWorldY()    { return worldY; }
+}
