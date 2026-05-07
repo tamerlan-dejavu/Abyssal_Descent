@@ -61,9 +61,18 @@ public final class HudRenderer {
 
         statusWindow.update(dt);
 
-        // ── shape pass (backgrounds, bars, icons) ────────────────────────────
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        // ── texture background pass (behind shapes) ───────────────────────────
+        batch.setProjectionMatrix(hudCamera.combined);
+        batch.begin();
+        statusWindow.renderBackground(batch, 10f, sh - StatusWindow.H - 10f);
+        minimapWindow.renderBackground(batch, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
+        keyInventory.renderBackground(batch, sw - KeyInventoryWindow.W - 10f, 10f);
+        batch.end();
+
+        // ── shape pass (procedural backgrounds + bars + icons) ────────────────
         shapes.setProjectionMatrix(hudCamera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
 
@@ -73,9 +82,8 @@ public final class HudRenderer {
         chipSlots.renderShapes(shapes, sw, sh);
 
         shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // ── text pass ────────────────────────────────────────────────────────
+        // ── text + icon texture pass ──────────────────────────────────────────
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
 
@@ -85,6 +93,8 @@ public final class HudRenderer {
         chipSlots.renderText(batch, sw, sh);
 
         batch.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
 
         // ── inventory overlay (own begin/end inside) ─────────────────────────
         if (inventoryScreen.isOpen()) {
