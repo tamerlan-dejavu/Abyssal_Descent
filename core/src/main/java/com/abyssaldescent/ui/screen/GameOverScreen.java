@@ -2,6 +2,7 @@ package com.abyssaldescent.ui.screen;
 
 import com.abyssaldescent.GameStateManager;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -35,6 +36,8 @@ public final class GameOverScreen implements Screen {
 
     @Override
     public void show() {
+        Gdx.input.setInputProcessor(null);
+
         batch  = new SpriteBatch();
         shapes = new ShapeRenderer();
         layout = new GlyphLayout();
@@ -79,6 +82,12 @@ public final class GameOverScreen implements Screen {
             returnButton.handleClick(mx, my);
         }
 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            GameStateManager.getInstance().resetForNewRun();
+            UiManager.getInstance().showMainMenu();
+            return;
+        }
+
         float panelX = (sw - PANEL_W) * 0.5f;
         float panelY = (sh - PANEL_H) * 0.5f;
 
@@ -89,6 +98,8 @@ public final class GameOverScreen implements Screen {
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         shapes.setColor(PANEL_FILL);
         shapes.rect(panelX, panelY, PANEL_W, PANEL_H);
+        shapes.setColor(0.35f, 0.15f, 0.40f, 0.9f);
+        shapes.rect(panelX + 40f, panelY + 130f, PANEL_W - 80f, 2f);
         returnButton.renderBackground(shapes);
         shapes.end();
 
