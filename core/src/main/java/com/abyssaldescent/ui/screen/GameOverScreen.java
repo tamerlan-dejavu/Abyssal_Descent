@@ -102,7 +102,7 @@ public final class GameOverScreen implements Screen {
 
         float baseW = 400f;
         float baseH = 100f;
-        tierNameW = baseW * 1.75f;
+        tierNameW = baseW * 1.75f + 50f;
         tierNameH = baseH * 1.75f;
         tierNameX = (sw - tierNameW) * 0.5f;
         tierNameY = buttonY + buttonH + 50f;
