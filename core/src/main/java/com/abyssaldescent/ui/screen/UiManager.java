@@ -45,6 +45,10 @@ public final class UiManager {
         navigate(new GameScreen(DifficultySettings.NORMAL));
     }
 
+    public void showGameOver() {
+        navigate(new GameOverScreen());
+    }
+
     private void navigate(Screen next) {
         Screen prev = game.getScreen();
         game.setScreen(next);

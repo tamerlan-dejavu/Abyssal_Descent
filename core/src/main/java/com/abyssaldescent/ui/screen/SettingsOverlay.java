@@ -11,13 +11,13 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
  * Full-screen settings overlay.
  *
  * <p>The blurred background is drawn by MainMenuScreen — this class renders only
- * the interactive layer (sliders, fullscreen toggle, Back button).
+ * the interactive layer (sliders, labels, Back button).
  *
  * <h3>Layout</h3>
  * <ul>
- *   <li>Three volume sliders (Master / Music / SFX) + Fullscreen toggle — centred
+ *   <li>Three volume sliders (Master / Music / SFX) with texture labels — centred
  *       horizontally and placed at ~58 % of screen height.</li>
- *   <li>Back button — bottom-right corner, 500×150 px, 40 px margin.</li>
+ *   <li>Back button — bottom-left corner, 500×150 px, 40 px margin.</li>
  * </ul>
  *
  * <h3>Slider colours</h3>
@@ -28,31 +28,30 @@ class SettingsOverlay extends MenuOverlay {
     static final String PREFS = "abyssal_descent_settings";
 
     // ── sizing constants ──────────────────────────────────────────────────────
-    private static final float SLIDER_W   = 500f;
-    private static final float SLIDER_H   = 14f;
-    private static final float THUMB_R    = 14f;
-    private static final float LABEL_W    = 280f;
-    private static final float LABEL_GAP  = 50f;
-    private static final float VALUE_GAP  = 20f;
-    private static final float ROW_H      = 120f;  // +20 px spacing between rows
-    private static final float CONTENT_DY = -35f;  // shift content down 35 px
-    private static final float BTN_W      = 500f;
-    private static final float BTN_H      = 150f;
-    private static final float FS_BTN_W   = 300f;  // fullscreen toggle: 300×125
-    private static final float FS_BTN_H   = 125f;
-    private static final float MARGIN     = 40f;
+    // EDIT HERE: Adjust slider and label sizes
+    private static final float SLIDER_W   = 700f;   // slider width
+    private static final float SLIDER_H   = 18f;    // slider height
+    private static final float THUMB_R    = 12f;    // slider thumb radius
+    private static final float LABEL_TEX_W = 450f;  // label texture width
+    private static final float LABEL_TEX_H = 100f;   // label texture height
+    private static final float LABEL_GAP  = 50f;    // gap between label and slider
+    private static final float VALUE_GAP  = 27f;    // gap between slider and value
+    private static final float SLIDER_SPACING = 175f; // EDIT HERE: vertical spacing between sliders (40px)
+    private static final float CENTER_Y    = 900f;  // EDIT HERE: center Y position for middle slider (1440x900)
+    private static final float BTN_W      = 500f;   // back button width
+    private static final float BTN_H      = 150f;   // back button height
+    private static final float MARGIN     = 40f;    // margin from edges
 
     // ── state ─────────────────────────────────────────────────────────────────
     float   masterVolume, musicVolume, sfxVolume;
-    boolean fullscreen;
 
     // ── layout fields (rebuilt on resize) ────────────────────────────────────
     private float   labelX, sliderX, valueX;
     private float[] sliderY;            // Y baselines for 3 sliders
-    private float   toggleRowY;         // Y for fullscreen row
     private int     draggingSlider = -1;
 
-    private MenuButton fullscreenBtn;
+    private Texture masterVolumeTex, musicVolumeTex, sfxVolumeTex;
+    private Texture backOffTex, backOnTex;
     private MenuButton backBtn;
 
     // ── constructor ───────────────────────────────────────────────────────────
@@ -80,27 +79,17 @@ class SettingsOverlay extends MenuOverlay {
         panelX = px; panelY = py; panelW = pw; panelH = ph;
 
         // Total block width = label + gap + slider + gap + value
-        float totalW = LABEL_W + LABEL_GAP + SLIDER_W + VALUE_GAP + 60f /*value digits*/;
+        float totalW = LABEL_TEX_W + LABEL_GAP + SLIDER_W + VALUE_GAP + 60f /*value digits*/;
         labelX  = px + (pw - totalW) / 2f;
-        sliderX = labelX + LABEL_W + LABEL_GAP;
+        sliderX = labelX + LABEL_TEX_W + LABEL_GAP;
         valueX  = sliderX + SLIDER_W + VALUE_GAP;
 
-        // Content top shifted down by CONTENT_DY
-        float contentTop = py + ph * 0.68f + CONTENT_DY;
+        // Vertical positioning: middle slider at CENTER_Y, others at ±SLIDER_SPACING
         sliderY = new float[]{
-                contentTop,
-                contentTop - ROW_H,
-                contentTop - ROW_H * 2
+                CENTER_Y + SLIDER_SPACING,      // top slider
+                CENTER_Y,                        // middle slider (center)
+                CENTER_Y - SLIDER_SPACING       // bottom slider
         };
-
-        // Fullscreen toggle one row below sliders
-        toggleRowY = contentTop - ROW_H * 3;
-
-        fullscreenBtn = new MenuButton(
-                fullscreen ? "ON" : "OFF",
-                sliderX, toggleRowY - (FS_BTN_H - SLIDER_H) / 2f,
-                FS_BTN_W, FS_BTN_H,
-                this::toggleFullscreen);
 
         // Back — bottom-left corner
         backBtn = new MenuButton(
@@ -109,6 +98,11 @@ class SettingsOverlay extends MenuOverlay {
                 py + MARGIN,
                 BTN_W, BTN_H,
                 onClose);
+        if (backOffTex == null) {
+            backOffTex = ScreenAssets.loadTexture("ui/buttons/back_off.png");
+            backOnTex  = ScreenAssets.loadTexture("ui/buttons/back_on.png");
+        }
+        if (backOffTex != null) backBtn.setTextures(backOffTex, backOnTex);
     }
 
     // ── input ─────────────────────────────────────────────────────────────────
@@ -116,7 +110,6 @@ class SettingsOverlay extends MenuOverlay {
     @Override
     void update(float mx, float my) {
         if (backBtn == null) return;
-        fullscreenBtn.update(mx, my);
         backBtn.update(mx, my);
     }
 
@@ -124,7 +117,6 @@ class SettingsOverlay extends MenuOverlay {
     boolean handleClick(float wx, float wy) {
         if (backBtn      == null)            return false;
         if (backBtn.handleClick(wx, wy))     return true;
-        if (fullscreenBtn.handleClick(wx, wy)) return true;
         for (int i = 0; i < sliderY.length; i++) {
             if (onSliderTrack(wx, wy, i)) {
                 draggingSlider = i;
@@ -174,7 +166,6 @@ class SettingsOverlay extends MenuOverlay {
             shapes.circle(sliderX + fill, ty + SLIDER_H / 2f, THUMB_R, 20);
         }
 
-        fullscreenBtn.renderBackground(shapes);
         backBtn.renderBackground(shapes);
     }
 
@@ -186,42 +177,30 @@ class SettingsOverlay extends MenuOverlay {
     void renderLabels(SpriteBatch batch, BitmapFont font) {
         if (sliderY == null) return;
 
-        String[] labels = {"Master Volume", "Music Volume", "SFX Volume"};
+        Texture[] labelTextures = {masterVolumeTex, musicVolumeTex, sfxVolumeTex};
         float[]  vals   = {masterVolume, musicVolume, sfxVolume};
 
         font.getData().setScale(2f);
-        for (int i = 0; i < labels.length; i++) {
-            float rowMidY = sliderY[i] + SLIDER_H / 2f + 14f;
-            font.setColor(1f, 1f, 1f, 1f);
-            font.draw(batch, labels[i], labelX, rowMidY);
+        for (int i = 0; i < labelTextures.length; i++) {
+            float sliderBaseY = sliderY[i];
+            // Center label texture vertically on slider
+            float labelY = sliderBaseY - LABEL_TEX_H / 2f;
+            if (labelTextures[i] != null) {
+                batch.draw(labelTextures[i], labelX, labelY, LABEL_TEX_W, LABEL_TEX_H);
+            }
+            // Center percentage text vertically on slider
             font.setColor(0.75f, 0.75f, 0.75f, 1f);
-            font.draw(batch, Math.round(vals[i]) + "%", valueX, rowMidY);
+            font.draw(batch, Math.round(vals[i]) + "%", valueX, sliderBaseY + SLIDER_H / 2f + 14f);
         }
-
-        // Fullscreen label — aligned with the button
-        float toggleMidY = toggleRowY - (FS_BTN_H - SLIDER_H) / 2f + FS_BTN_H / 2f + 14f;
-        font.setColor(1f, 1f, 1f, 1f);
-        font.draw(batch, "Fullscreen", labelX, toggleMidY);
 
         // Buttons
         font.getData().setScale(3f);
-        fullscreenBtn.renderTexture(batch);
-        fullscreenBtn.renderLabel(batch, font);
         backBtn.renderTexture(batch);
         backBtn.renderLabel(batch, font);
 
         font.getData().setScale(3f); // reset for caller
     }
 
-    // ── actions ───────────────────────────────────────────────────────────────
-
-    private void toggleFullscreen() {
-        fullscreen = !fullscreen;
-        if (fullscreen) Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
-        else            Gdx.graphics.setWindowedMode(1280, 720);
-        rebuildLayout(panelX, panelY, panelW, panelH);
-        saveSettings();
-    }
 
     // ── slider helpers ────────────────────────────────────────────────────────
 
@@ -248,7 +227,7 @@ class SettingsOverlay extends MenuOverlay {
         masterVolume = p.getFloat("master_volume", 100f);
         musicVolume  = p.getFloat("music_volume",   80f);
         sfxVolume    = p.getFloat("sfx_volume",     80f);
-        fullscreen   = p.getBoolean("fullscreen",  false);
+        loadLabelTextures();
     }
 
     private void saveSettings() {
@@ -256,7 +235,20 @@ class SettingsOverlay extends MenuOverlay {
         p.putFloat("master_volume", masterVolume);
         p.putFloat("music_volume",  musicVolume);
         p.putFloat("sfx_volume",    sfxVolume);
-        p.putBoolean("fullscreen",  fullscreen);
         p.flush();
+    }
+
+    private void loadLabelTextures() {
+        masterVolumeTex = ScreenAssets.loadTexture("ui/buttons/master_volume.png");
+        musicVolumeTex  = ScreenAssets.loadTexture("ui/buttons/music_volume.png");
+        sfxVolumeTex    = ScreenAssets.loadTexture("ui/buttons/sfx.png");
+    }
+
+    void dispose() {
+        if (masterVolumeTex != null) masterVolumeTex.dispose();
+        if (musicVolumeTex != null) musicVolumeTex.dispose();
+        if (sfxVolumeTex != null) sfxVolumeTex.dispose();
+        if (backOffTex != null) backOffTex.dispose();
+        if (backOnTex != null) backOnTex.dispose();
     }
 }

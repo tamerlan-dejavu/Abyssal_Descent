@@ -17,32 +17,28 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
  */
 public final class HudRenderer {
 
-    private final OrthographicCamera   hudCamera;
-    private final BitmapFont           fontMedium;
-    private final BitmapFont           fontSmall;
-    private final HealthBarWidget      healthBar;
-    private final HudChipSlotWidget    chipSlots;
-    private final KeyCounterWidget     keyCounter;
-    private final RespawnCounterWidget respawnCounter;
-    private final LevelIndicator       levelIndicator;
-    private final InventoryScreen      inventoryScreen;
+    private final OrthographicCamera hudCamera;
+    private final BitmapFont        fontMedium;
+    private final BitmapFont        fontSmall;
+    private final StatusWindow      statusWindow;
+    private final MinimapWindow     minimapWindow;
+    private final HudChipSlotWidget chipSlots;
+    private final InventoryScreen   inventoryScreen;
 
     public HudRenderer(ChipInventory chipInventory) {
-        hudCamera  = new OrthographicCamera();
+        this.hudCamera = new OrthographicCamera();
 
-        fontMedium = new BitmapFont();
-        fontMedium.getData().setScale(1.6f);
+        this.fontMedium = new BitmapFont();
+        this.fontMedium.getData().setScale(1.6f);
 
-        fontSmall  = new BitmapFont();
-        fontSmall.getData().setScale(0.9f);
+        this.fontSmall = new BitmapFont();
+        this.fontSmall.getData().setScale(0.9f);
 
-        healthBar       = new HealthBarWidget(fontMedium);
-        chipSlots       = new HudChipSlotWidget(fontSmall);
-        chipInventory.addObserver(chipSlots);
-        keyCounter      = new KeyCounterWidget(fontMedium);
-        respawnCounter  = new RespawnCounterWidget(fontMedium);
-        levelIndicator  = new LevelIndicator(fontMedium);
-        inventoryScreen = new InventoryScreen(chipInventory, fontMedium, fontSmall);
+        this.statusWindow = new StatusWindow(this.fontMedium, this.fontSmall);
+        this.minimapWindow = new MinimapWindow(this.fontMedium, this.fontSmall);
+        this.chipSlots = new HudChipSlotWidget(this.fontSmall);
+        chipInventory.addObserver(this.chipSlots);
+        this.inventoryScreen = new InventoryScreen(chipInventory, this.fontMedium, this.fontSmall);
 
         updateCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
@@ -61,34 +57,39 @@ public final class HudRenderer {
         float sw = hudCamera.viewportWidth;
         float sh = hudCamera.viewportHeight;
 
-        healthBar.syncFromGameState();
+        statusWindow.update(dt);
 
-        // ── shape pass (backgrounds, bars, icons) ────────────────────────────
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        // ── texture background pass (behind shapes) ───────────────────────────
+        batch.setProjectionMatrix(hudCamera.combined);
+        batch.begin();
+        statusWindow.renderBackground(batch, 10f, sh - StatusWindow.H - 10f);
+        minimapWindow.renderBackground(batch, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
+        batch.end();
+
+        // ── shape pass (procedural backgrounds + bars + icons) ────────────────
         shapes.setProjectionMatrix(hudCamera.combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
 
-        healthBar.renderShapes(shapes, 20f, sh - 60f);
-        levelIndicator.renderShapes(shapes, sw / 2f - LevelIndicator.W / 2f, sh - 60f);
-        keyCounter.renderShapes(shapes, sw - KeyCounterWidget.W - 20f, sh - 60f);
-        respawnCounter.renderShapes(shapes, sw - 220f, sh - 110f);
+        statusWindow.renderShapes(shapes, 10f, sh - StatusWindow.H - 10f);
+        minimapWindow.renderShapes(shapes, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
         chipSlots.renderShapes(shapes, sw, sh);
 
         shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
 
-        // ── text pass ────────────────────────────────────────────────────────
+        // ── text + icon texture pass ──────────────────────────────────────────
         batch.setProjectionMatrix(hudCamera.combined);
         batch.begin();
 
-        healthBar.renderText(batch, 20f, sh - 60f);
-        levelIndicator.renderText(batch, sw / 2f - LevelIndicator.W / 2f, sh - 60f);
-        keyCounter.renderText(batch, sw - KeyCounterWidget.W - 20f, sh - 60f);
-        respawnCounter.renderText(batch, sw - 220f, sh - 110f);
+        statusWindow.renderText(batch, 10f, sh - StatusWindow.H - 10f);
+        minimapWindow.renderText(batch, sw - MinimapWindow.W - 10f, sh - MinimapWindow.H - 10f);
         chipSlots.renderText(batch, sw, sh);
 
         batch.end();
+
+        Gdx.gl.glDisable(GL20.GL_BLEND);
 
         // ── inventory overlay (own begin/end inside) ─────────────────────────
         if (inventoryScreen.isOpen()) {
@@ -129,11 +130,9 @@ public final class HudRenderer {
     public void dispose() {
         fontMedium.dispose();
         fontSmall.dispose();
-        healthBar.dispose();
+        statusWindow.dispose();
+        minimapWindow.dispose();
         chipSlots.dispose();
-        keyCounter.dispose();
-        respawnCounter.dispose();
-        levelIndicator.dispose();
         inventoryScreen.dispose();
     }
 }

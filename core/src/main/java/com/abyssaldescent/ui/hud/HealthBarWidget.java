@@ -36,7 +36,7 @@ public final class HealthBarWidget {
     public void syncFromGameState() {
         PlayerSlot slot = GameStateManager.getInstance().getKarinSlot();
         currentHp = slot.getCurrentHp();
-        maxHp     = slot.getCharacterType().getMaxHp();
+        maxHp     = slot.getMaxHp();
     }
 
     public void renderShapes(ShapeRenderer shapes, float x, float y) {

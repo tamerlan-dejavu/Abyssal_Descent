@@ -1,5 +1,7 @@
 package com.abyssaldescent.ui.screen;
 
+import com.abyssaldescent.GameController;
+import com.abyssaldescent.GamePhase;
 import com.abyssaldescent.GameStateManager;
 import com.abyssaldescent.audio.MusicPlayer;
 import com.abyssaldescent.combat.CombatManager;
@@ -11,9 +13,12 @@ import com.abyssaldescent.entity.enemy.EnemyFactory;
 import com.abyssaldescent.entity.enemy.EnemyType;
 import com.abyssaldescent.entity.player.Player;
 import com.abyssaldescent.entity.player.PlayerContext;
+import com.abyssaldescent.entity.player.PlayerEffectSystem;
 import com.abyssaldescent.entity.player.PlayerInputHandler;
 import com.abyssaldescent.entity.state.AttackingState;
 import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.EventListener;
+import com.abyssaldescent.event.GamePhaseChangedEvent;
 import com.abyssaldescent.event.KeyPickedUpEvent;
 import com.abyssaldescent.event.RespawnUsedEvent;
 import com.abyssaldescent.render.CameraController;
@@ -63,9 +68,12 @@ public class GameScreen implements Screen {
     private final Map<String, SpriteOrientation> enemyOrientations = new HashMap<>();
     private final Map<String, Float>             enemyLastX        = new HashMap<>();
     private final MusicPlayer musicPlayer = new MusicPlayer();
-    private HudRenderer      hudRenderer;
-    private ChipInventory    chipInventory;
-    private ChipPickupSystem chipPickupSystem;
+    private HudRenderer        hudRenderer;
+    private ChipInventory      chipInventory;
+    private ChipPickupSystem   chipPickupSystem;
+    private GameController     controller;
+    private PlayerEffectSystem playerEffectSystem;
+    private EventListener<GamePhaseChangedEvent> phaseListener;
     private int demoKeys     = 0;
     private int demoRespawns = 3;
 
@@ -76,7 +84,7 @@ public class GameScreen implements Screen {
     @Override
     public void show() {
         GameStateManager gsm = GameStateManager.getInstance();
-        gsm.activateKarin();
+        gsm.initWithDifficulty(difficulty);
 
         batch  = new SpriteBatch();
         shapes = new ShapeRenderer();
@@ -107,6 +115,19 @@ public class GameScreen implements Screen {
                 EventBus.getInstance(), player.getCombatStrategy());
         hudRenderer = new HudRenderer(chipInventory);
 
+        playerEffectSystem = new PlayerEffectSystem(player.getContext(), EventBus.getInstance());
+
+        controller = new GameController();
+        controller.startNewRun();
+        controller.initPlayer(player);
+
+        phaseListener = e -> {
+            if (e.getNewPhase() == GamePhase.GAME_OVER) {
+                UiManager.getInstance().showGameOver();
+            }
+        };
+        EventBus.getInstance().subscribe(GamePhaseChangedEvent.class, phaseListener);
+
         InputMultiplexer multiplexer = new InputMultiplexer(buildHudAdapter(), inputHandler);
         Gdx.input.setInputProcessor(multiplexer);
     }
@@ -115,6 +136,8 @@ public class GameScreen implements Screen {
     public void render(float delta) {
         inputHandler.update();
         player.update(delta);
+        playerEffectSystem.update(delta);
+        controller.update(delta);
         clampPlayerToWorld();
 
         for (Enemy e : combatManager.getEnemies()) {
@@ -154,6 +177,9 @@ public class GameScreen implements Screen {
     @Override
     public void hide() {
         Gdx.input.setInputProcessor(null);
+        if (phaseListener != null) {
+            EventBus.getInstance().unsubscribe(GamePhaseChangedEvent.class, phaseListener);
+        }
     }
 
     @Override
@@ -169,8 +195,10 @@ public class GameScreen implements Screen {
         if (enemySprites != null)    enemySprites.dispose();
         musicPlayer.dispose();
         if (combatManager != null)   combatManager.dispose();
-        if (chipPickupSystem != null) chipPickupSystem.dispose();
-        if (hudRenderer != null)     hudRenderer.dispose();
+        if (chipPickupSystem != null)    chipPickupSystem.dispose();
+        if (hudRenderer != null)         hudRenderer.dispose();
+        if (playerEffectSystem != null)  playerEffectSystem.dispose();
+        if (controller != null)          controller.dispose();
     }
 
     // ── input ────────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ import com.abyssaldescent.event.StatusEffectEvent;
 
 public final class PlayerEffectSystem {
 
-    private static final String PLAYER_ID = "player";
+    private static final String PLAYER_ID = "PLAYER";
 
     private final PlayerContext ctx;
     private final EventBus eventBus;
@@ -32,7 +32,7 @@ public final class PlayerEffectSystem {
     }
 
     private void onStatusEffect(StatusEffectEvent e) {
-        if (!PLAYER_ID.equals(e.getTargetId())) return;
+        if (!PLAYER_ID.equalsIgnoreCase(e.getTargetId())) return;
         if (e.getEffect() == StatusEffect.SLOW) {
             ctx.applySlow(e.getMagnitude(), e.getDuration());
         } else if (e.getEffect() == StatusEffect.GRAB) {
