@@ -1,0 +1,33 @@
+package com.abyssaldescent.audio;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Sound;
+
+import java.util.EnumMap;
+import java.util.Map;
+
+public class SoundPool {
+
+    private final Map<SoundId, Sound> sounds = new EnumMap<>(SoundId.class);
+
+    public void loadAll() {
+        for (SoundId id : SoundId.values()) {
+            try {
+                Sound sound = Gdx.audio.newSound(Gdx.files.internal(id.getPath()));
+                sounds.put(id, sound);
+            } catch (Exception e) {
+                Gdx.app.log("SoundPool", "Missing sound: " + id.getPath() + " — skipped");
+            }
+        }
+    }
+
+    public Sound getSound(SoundId id) {
+        return sounds.get(id);
+    }
+
+    /** Освободить все ресурсы. */
+    public void dispose() {
+        for (Sound s : sounds.values()) s.dispose();
+        sounds.clear();
+    }
+}
