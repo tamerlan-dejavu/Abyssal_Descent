@@ -1,0 +1,32 @@
+package com.abyssaldescent.audio;
+
+public enum SoundId {
+
+    PLAYER_ATTACK       ("sfx/combat/player_attack.ogg"),
+    PLAYER_HIT          ("sfx/combat/player_hit.ogg"),
+    PLAYER_DEATH        ("sfx/combat/player_death.ogg"),
+    ENEMY_HIT           ("sfx/combat/enemy_hit.ogg"),
+    ENEMY_DEATH         ("sfx/combat/enemy_death.ogg"),
+    BOSS_HIT            ("sfx/combat/boss_hit.ogg"),
+    BOSS_DEATH          ("sfx/combat/boss_death.ogg"),
+
+    DOOR_OPEN           ("sfx/world/door_open.ogg"),
+    KEY_PICKUP          ("sfx/world/key_pickup.ogg"),
+    ROOM_CLEARED        ("sfx/world/room_cleared.ogg"),
+    FLOOR_TRANSITION    ("sfx/world/floor_transition.ogg"),
+    ALTAR_INTERACT      ("sfx/world/altar_interact.ogg"),
+
+    CHIP_PICKUP         ("sfx/chips/chip_pickup.ogg"),
+    CHIP_ACTIVATE       ("sfx/chips/chip_activate.ogg"),
+
+    UI_CLICK            ("sfx/ui/ui_click.ogg"),
+    UI_HOVER            ("sfx/ui/ui_hover.ogg"),
+    GAME_OVER_STING     ("sfx/ui/game_over.ogg"),
+    VICTORY_STING       ("sfx/ui/victory.ogg");
+
+    private final String path;
+
+    SoundId(String path) { this.path = path; }
+
+    public String getPath() { return path; }
+}

@@ -27,7 +27,13 @@ allprojects {
 
 configure(subprojects) {
   apply plugin: 'java-library'
-  java.sourceCompatibility = 8
+
+  tasks.withType(JavaCompile).configureEach {
+    options.incremental = true
+    options.release.set(8)
+    options.encoding = 'UTF-8'
+    options.compilerArgs.add('-Xlint:-options')
+  }
 
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.

@@ -1,0 +1,93 @@
+package com.abyssaldescent.audio;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.audio.Music;
+
+public class MusicPlayer {
+
+    private static final float DEFAULT_VOLUME    = 0.6f;
+    private static final float CROSSFADE_SPEED   = 1.2f;   // объём/сек
+
+    private Music   currentMusic  = null;
+    private Music   incomingMusic = null;
+    private MusicTrack currentTrack = null;
+
+    private float masterVolume = DEFAULT_VOLUME;
+    private boolean muted      = false;
+
+    public void play(MusicTrack track) {
+        if (track == currentTrack && currentMusic != null && currentMusic.isPlaying()) return;
+
+        Music next;
+        try {
+            next = Gdx.audio.newMusic(Gdx.files.internal(track.getPath()));
+        } catch (Exception e) {
+            Gdx.app.log("MusicPlayer", "Missing music: " + track.getPath() + " — skipped");
+            return;
+        }
+
+        next.setLooping(true);
+        next.setVolume(0f);   // начинаем тихо, fade-in
+        next.play();
+
+        if (currentMusic != null) {
+            incomingMusic = next;
+        } else {
+            currentMusic = next;
+        }
+
+        currentTrack = track;
+    }
+
+    public void stop() {
+        if (currentMusic != null) {
+            currentMusic.stop();
+            currentMusic.dispose();
+            currentMusic = null;
+        }
+        currentTrack = null;
+    }
+
+    public void update(float delta) {
+        float targetVol = muted ? 0f : masterVolume;
+
+        if (incomingMusic != null) {
+            // Fade-in входящего
+            float vol = Math.min(targetVol, incomingMusic.getVolume() + CROSSFADE_SPEED * delta);
+            incomingMusic.setVolume(vol);
+
+            // Fade-out текущего
+            if (currentMusic != null) {
+                float oldVol = Math.max(0f, currentMusic.getVolume() - CROSSFADE_SPEED * delta);
+                currentMusic.setVolume(oldVol);
+                if (oldVol <= 0f) {
+                    currentMusic.stop();
+                    currentMusic.dispose();
+                    currentMusic = null;
+                }
+            }
+
+            // Переключить когда incoming достиг целевого объёма
+            if (incomingMusic.getVolume() >= targetVol) {
+                currentMusic  = incomingMusic;
+                incomingMusic = null;
+            }
+        } else if (currentMusic != null) {
+            currentMusic.setVolume(targetVol);
+        }
+    }
+
+    public void setMasterVolume(float volume) {
+        masterVolume = Math.max(0f, Math.min(1f, volume));
+    }
+
+    public float getMasterVolume() { return masterVolume; }
+
+    public void setMuted(boolean muted) { this.muted = muted; }
+    public boolean isMuted()           { return muted; }
+
+    public void dispose() {
+        if (currentMusic  != null) { currentMusic.dispose();  currentMusic  = null; }
+        if (incomingMusic != null) { incomingMusic.dispose(); incomingMusic = null; }
+    }
+}

@@ -1,0 +1,127 @@
+package com.abyssaldescent.audio;
+
+import com.badlogic.gdx.audio.Sound;
+import com.abyssaldescent.event.EventBus;
+import com.abyssaldescent.event.events.*;
+
+public class AudioManager {
+
+    private static AudioManager instance;
+
+    public static AudioManager getInstance() {
+        if (instance == null) instance = new AudioManager();
+        return instance;
+    }
+
+    private AudioManager() {}
+
+    private final SoundPool   soundPool   = new SoundPool();
+    private final MusicPlayer musicPlayer = new MusicPlayer();
+
+    private float sfxVolume = 0.8f;
+    private boolean sfxMuted = false;
+
+
+    public void init(EventBus eventBus) {
+        soundPool.loadAll();
+        subscribeToEvents(eventBus);
+    }
+
+
+    private void subscribeToEvents(EventBus eventBus) {
+
+        // Бой — игрок
+        eventBus.subscribe(PlayerAttackEvent.class,   e -> playSound(SoundId.PLAYER_ATTACK));
+        eventBus.subscribe(PlayerDamagedEvent.class,  e -> playSound(SoundId.PLAYER_HIT));
+        eventBus.subscribe(PlayerDiedEvent.class,     e -> playSound(SoundId.PLAYER_DEATH));
+
+        // Бой — враги
+        eventBus.subscribe(EnemyDamagedEvent.class,   e -> playSound(SoundId.ENEMY_HIT));
+        eventBus.subscribe(EnemyDiedEvent.class,      e -> playSound(SoundId.ENEMY_DEATH));
+
+        // Мир
+        eventBus.subscribe(KeyPickedUpEvent.class,    e -> playSound(SoundId.KEY_PICKUP));
+        eventBus.subscribe(RoomClearedEvent.class,    e -> playSound(SoundId.ROOM_CLEARED));
+        eventBus.subscribe(KeyUsedEvent.class,        e -> playSound(SoundId.DOOR_OPEN));
+
+        // Чипы
+        eventBus.subscribe(ChipCollectedEvent.class,  e -> playSound(SoundId.CHIP_PICKUP));
+        eventBus.subscribe(ChipActivatedEvent.class,  e -> playSound(SoundId.CHIP_ACTIVATE));
+
+        // Переход яруса — смена музыки
+        eventBus.subscribe(FloorChangedEvent.class,   e -> {
+            playSound(SoundId.FLOOR_TRANSITION);
+            playMusic(MusicTrack.forFloor(e.getNewFloor()));
+        });
+
+        // Босс
+        eventBus.subscribe(BossDefeatedEvent.class,   e -> {
+            playSound(SoundId.BOSS_DEATH);
+            playMusic(MusicTrack.VICTORY);
+        });
+
+        // Game Over / Victory — музыка финала
+        eventBus.subscribe(GameOverEvent.class,       e -> {
+            playSound(SoundId.GAME_OVER_STING);
+            playMusic(MusicTrack.GAME_OVER);
+        });
+
+        // Универсальный PlaySoundEvent (от RoomClearedFeedback и т.д.)
+        eventBus.subscribe(PlaySoundEvent.class,      e -> playSoundByPath(e.getSoundPath()));
+    }
+
+
+    /** Воспроизвести звуковой эффект по идентификатору. */
+    public void playSound(SoundId id) {
+        if (sfxMuted) return;
+        Sound sound = soundPool.getSound(id);
+        if (sound != null) sound.play(sfxVolume);
+    }
+
+    /** Воспроизвести звук по строковому пути (для PlaySoundEvent). */
+    public void playSoundByPath(String path) {
+        // Ищем SoundId с таким путём
+        for (SoundId id : SoundId.values()) {
+            if (id.getPath().equals(path)) {
+                playSound(id);
+                return;
+            }
+        }
+    }
+
+    /** Переключить фоновую музыку с crossfade. */
+    public void playMusic(MusicTrack track) {
+        musicPlayer.play(track);
+    }
+
+    /** Остановить музыку. */
+    public void stopMusic() {
+        musicPlayer.stop();
+    }
+
+    /** Обновлять каждый кадр (нужен для crossfade музыки). */
+    public void update(float delta) {
+        musicPlayer.update(delta);
+    }
+
+
+    public void setSfxVolume(float volume) {
+        sfxVolume = Math.max(0f, Math.min(1f, volume));
+    }
+
+    public void setMusicVolume(float volume) {
+        musicPlayer.setMasterVolume(volume);
+    }
+
+    public float getSfxVolume()   { return sfxVolume; }
+    public float getMusicVolume() { return musicPlayer.getMasterVolume(); }
+
+    public void setSfxMuted(boolean muted)   { this.sfxMuted = muted; }
+    public void setMusicMuted(boolean muted) { musicPlayer.setMuted(muted); }
+
+
+    public void dispose() {
+        soundPool.dispose();
+        musicPlayer.dispose();
+    }
+}

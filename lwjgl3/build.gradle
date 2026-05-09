@@ -4,7 +4,6 @@ buildscript {
     gradlePluginPortal()
   }
   dependencies {
-    classpath "io.github.fourlastor:construo:2.1.0"
     if(enableGraalNative == 'true') {
       classpath "org.graalvm.buildtools.native:org.graalvm.buildtools.native.gradle.plugin:0.9.28"
     }
@@ -13,19 +12,19 @@ buildscript {
 plugins {
   id "application"
 }
-apply plugin: 'io.github.fourlastor.construo'
 
 
-import io.github.fourlastor.construo.Target
+
 
 sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
 application.mainClass = 'com.abyssaldescent.lwjgl3.Lwjgl3Launcher'
 application.applicationName = appName
 eclipse.project.name = appName + '-lwjgl3'
-java.sourceCompatibility = 8
-java.targetCompatibility = 8
-if (JavaVersion.current().isJava9Compatible()) {
-        compileJava.options.release.set(8)
+
+tasks.withType(JavaCompile).configureEach {
+    options.release.set(8)
+    options.incremental = true
+    options.compilerArgs.add('-Xlint:-options')
 }
 
 dependencies {
@@ -36,8 +35,7 @@ dependencies {
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-backend-lwjgl3:$graalHelperVersion"
-      implementation "io.github.berstanio:gdx-svmhelper-extension-box2d:$graalHelperVersion"
-
+    implementation "io.github.berstanio:gdx-svmhelper-extension-box2d:$graalHelperVersion"
   }
   // Forces LWJGL3 to use at least $lwjgl3Version, currently 3.4.1, to avoid problems on Java 25 and up.
   constraints{
@@ -126,49 +124,7 @@ tasks.register("jarWin") {
   }
 }
 
-construo {
-  // name of the executable
-  name.set(appName)
-  // human-readable name, used for example in the `.app` name for macOS
-  humanName.set(appName)
-  jlink {
-    guessModulesFromJar.set(false)
-    // You may need to add more modules, as needed.
-    modules.addAll("java.base", "java.management", "java.desktop", "jdk.unsupported")
-  }
-
-  targets.configure {
-    register("linuxX64", Target.Linux) {
-      architecture.set(Target.Architecture.X86_64)
-      jdkUrl.set("https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jdk_x64_linux_hotspot_21.0.10_7.tar.gz")
-      // Linux does not currently have a way to set the icon on the executable
-    }
-    register("macM1", Target.MacOs) {
-      architecture.set(Target.Architecture.AARCH64)
-      jdkUrl.set("https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jdk_aarch64_mac_hotspot_21.0.10_7.tar.gz")
-      // macOS needs an identifier
-      identifier.set("com.abyssaldescent." + appName)
-      // Optional: icon for macOS, as an ICNS file
-      macIcon.set(project.file("icons/logo.icns"))
-    }
-    register("macX64", Target.MacOs) {
-      architecture.set(Target.Architecture.X86_64)
-      jdkUrl.set("https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jdk_x64_mac_hotspot_21.0.10_7.tar.gz")
-      // macOS needs an identifier
-      identifier.set("com.abyssaldescent." + appName)
-      // Optional: icon for macOS, as an ICNS file
-      macIcon.set(project.file("icons/logo.icns"))
-    }
-    register("winX64", Target.Windows) {
-      architecture.set(Target.Architecture.X86_64)
-      // Optional: icon for Windows, as a PNG
-      icon.set(project.file("icons/logo.png"))
-      jdkUrl.set("https://github.com/adoptium/temurin21-binaries/releases/download/jdk-21.0.10%2B7/OpenJDK21U-jdk_x64_windows_hotspot_21.0.10_7.zip")
-      // Uncomment the next line to show a console when the game runs, to print messages.
-      //useConsole.set(true)
-    }
-  }
-}
+// construo plugin removed temporarily - re-add for distribution packaging
 
 // Equivalent to the jar task; here for compatibility with gdx-setup.
 tasks.register('dist') {
