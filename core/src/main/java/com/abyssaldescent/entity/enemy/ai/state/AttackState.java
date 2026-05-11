@@ -7,7 +7,7 @@ import com.abyssaldescent.event.EventBus;
 
 public final class AttackState implements EnemyState {
     public static final AttackState INSTANCE = new AttackState();
-    public static final String PLAYER_TARGET_ID = "player";
+    public static final String PLAYER_TARGET_ID = "PLAYER";
 
     private AttackState() {}
 

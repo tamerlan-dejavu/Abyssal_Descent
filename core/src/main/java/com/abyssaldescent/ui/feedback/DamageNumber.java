@@ -1,0 +1,73 @@
+package com.abyssaldescent.ui.feedback;
+
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Interpolation;
+
+
+public class DamageNumber {
+
+    private static final float LIFETIME    = 1.0f;   // сек
+    private static final float RISE_SPEED  = 40f;    // пикс/сек вверх
+
+    // Типы: обычный урон, критический, лечение
+    public enum Kind { DAMAGE, CRIT, HEAL }
+
+    private float x, y;
+    private float timer;
+    private int   amount;
+    private Kind  kind;
+    private boolean active;
+
+    public void init(float x, float y, int amount, Kind kind) {
+        this.x      = x;
+        this.y      = y;
+        this.amount = amount;
+        this.kind   = kind;
+        this.timer  = LIFETIME;
+        this.active = true;
+    }
+
+    public void update(float delta) {
+        if (!active) return;
+        timer -= delta;
+        y     += RISE_SPEED * delta;
+        if (timer <= 0) active = false;
+    }
+
+    public void render(SpriteBatch batch, BitmapFont fontNormal, BitmapFont fontCrit) {
+        if (!active) return;
+
+        float ratio = timer / LIFETIME;                     // 1→0
+        float alpha = Interpolation.fade.apply(ratio);      // плавное исчезание
+
+        String text;
+        BitmapFont font;
+        Color color;
+
+        switch (kind) {
+            case CRIT:
+                text  = "!" + amount + "!";
+                font  = fontCrit;
+                color = new Color(1f, 0.85f, 0f, alpha);
+                break;
+            case HEAL:
+                text  = "+" + amount;
+                font  = fontNormal;
+                color = new Color(0.2f, 0.95f, 0.3f, alpha);
+                break;
+            default:
+                text  = "-" + amount;
+                font  = fontNormal;
+                color = new Color(0.95f, 0.25f, 0.25f, alpha);
+                break;
+        }
+
+        font.setColor(color);
+        font.draw(batch, text, x, y);
+    }
+
+    public boolean isActive() { return active; }
+    public void    deactivate() { active = false; }
+}
