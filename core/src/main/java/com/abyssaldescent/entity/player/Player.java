@@ -1,10 +1,13 @@
 package com.abyssaldescent.entity.player;
 
+import com.abyssaldescent.GameStateManager;
 import com.abyssaldescent.combat.strategy.CombatStrategy;
 import com.abyssaldescent.combat.strategy.MeleeStrategy;
 import com.abyssaldescent.command.Command;
 import com.abyssaldescent.entity.state.IdleState;
 import com.abyssaldescent.entity.state.PlayerState;
+import com.abyssaldescent.event.DamageEvent;
+import com.abyssaldescent.event.EventBus;
 
 import java.util.ArrayDeque;
 import java.util.Queue;
@@ -61,6 +64,22 @@ public final class Player {
     public String getStateName() { return currentState.getName(); }
 
     public boolean isInvincible() { return context.isInvincible(); }
+
+    public void takeDamage(int amount) {
+        if (context.isInvincible() || amount <= 0) return;
+        EventBus.getInstance().post(new DamageEvent("PLAYER", amount, "enemy"));
+    }
+
+    public PlayerMemento saveMemento() {
+        PlayerSlot slot = GameStateManager.getInstance().getKarinSlot();
+        return new PlayerMemento(context.getPosition().x, context.getPosition().y,
+                slot.getCurrentHp());
+    }
+
+    public void restoreMemento(PlayerMemento memento) {
+        context.setPosition(memento.getX(), memento.getY());
+        GameStateManager.getInstance().getKarinSlot().setCurrentHp(memento.getHp());
+    }
 
     public CombatStrategy getCombatStrategy() { return combatStrategy; }
 

@@ -1,10 +1,12 @@
 package com.abyssaldescent;
 
+import com.abyssaldescent.config.DifficultySettings;
 import com.abyssaldescent.entity.player.CharacterType;
 import com.abyssaldescent.entity.player.PlayerSlot;
 import com.abyssaldescent.entity.player.PlayerStatus;
 import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.TierChangedEvent;
+import com.abyssaldescent.ui.screen.GameScreen;
 import com.abyssaldescent.event.PlayerStatusChangedEvent;
 
 public final class GameStateManager {
@@ -20,7 +22,8 @@ public final class GameStateManager {
     }
 
     private final PlayerSlot karinSlot = new PlayerSlot(CharacterType.KARIN);
-    private int floorNumber = 1;
+    private int   floorNumber          = 1;
+    private float enemyDamageMultiplier = 1.0f;
 
     public PlayerSlot getKarinSlot() { return karinSlot; }
     
@@ -44,6 +47,15 @@ public final class GameStateManager {
         EventBus.getInstance().post(new PlayerStatusChangedEvent(character, previous, newStatus));
     }
 
+    public float getEnemyDamageMultiplier() { return enemyDamageMultiplier; }
+
+    public void initWithDifficulty(DifficultySettings difficulty) {
+        int maxHp = Math.round(CharacterType.KARIN.getMaxHp() * difficulty.hpMultiplier);
+        karinSlot.setEffectiveMaxHp(maxHp);
+        karinSlot.setCurrentHp(maxHp);
+        enemyDamageMultiplier = difficulty.enemyDamageMultiplier;
+    }
+
     public void resetForNewRun() {
         floorNumber = 1;
         karinSlot.reset();
@@ -51,5 +63,10 @@ public final class GameStateManager {
 
     static void resetInstance() {
         instance = null;
+    }
+
+    public static void setState(GameScreen gameScreen) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setState'");
     }
 }

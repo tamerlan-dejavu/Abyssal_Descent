@@ -95,7 +95,6 @@ public final class PlayerInputHandler extends InputAdapter {
             return true;
         }
         if (keycode == Input.Keys.ESCAPE) {
-            Gdx.app.exit();
             return true;
         }
         return false;

@@ -3,6 +3,7 @@ package com.abyssaldescent.entity.player;
 public final class PlayerSlot {
     private final CharacterType characterType;
     private int currentHp;
+    private int effectiveMaxHp = 0;
     private PlayerStatus status;
     private boolean active;
 
@@ -13,13 +14,21 @@ public final class PlayerSlot {
         this.active = false;
     }
 
+    public void setEffectiveMaxHp(int maxHp) {
+        this.effectiveMaxHp = Math.max(1, maxHp);
+    }
+
+    public int getMaxHp() {
+        return effectiveMaxHp > 0 ? effectiveMaxHp : characterType.getMaxHp();
+    }
+
     public void reset() {
-        currentHp = characterType.getMaxHp();
+        currentHp = getMaxHp();
         status = PlayerStatus.ALIVE;
     }
 
     public void setCurrentHp(int hp) {
-        currentHp = Math.max(0, Math.min(hp, characterType.getMaxHp()));
+        currentHp = Math.max(0, Math.min(hp, getMaxHp()));
     }
 
     public void applyDamage(int damage) {
