@@ -6,6 +6,7 @@ import com.abyssaldescent.entity.player.PlayerSlot;
 import com.abyssaldescent.entity.player.PlayerStatus;
 import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.TierChangedEvent;
+import com.abyssaldescent.ui.screen.GameScreen;
 import com.abyssaldescent.event.PlayerStatusChangedEvent;
 
 public final class GameStateManager {
@@ -62,5 +63,10 @@ public final class GameStateManager {
 
     static void resetInstance() {
         instance = null;
+    }
+
+    public static void setState(GameScreen gameScreen) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setState'");
     }
 }
