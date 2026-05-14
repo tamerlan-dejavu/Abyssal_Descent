@@ -4,8 +4,11 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import com.abyssaldescent.event.BossDefeatedEvent;
+
 public final class EventBus {
 
+    private static final ThreadLocal<BossDefeatedEvent> bossDefeatedEvent = ThreadLocal.withInitial(BossDefeatedEvent::new);
     private static EventBus instance;
     private final Map<Class<?>, List<EventListener<?>>> listeners = new ConcurrentHashMap<>();
 
@@ -30,13 +33,13 @@ public final class EventBus {
     }
 
     
-    public <T extends GameEvent> void post(T event) {
+    public <T extends GameEvent> void post1(BossHitEvent event) {
         List<EventListener<?>> list = listeners.get(event.getClass());
         if (list == null || list.isEmpty()) {
             return;
         }
         for (EventListener<?> listener : list) {
-            ((EventListener<T>) listener).onEvent(event);
+            ((EventListener<T>) listener).onEvent(bossDefeatedEvent);
         }
     }
 
@@ -46,5 +49,30 @@ public final class EventBus {
 
     public void clearFor(Class<? extends GameEvent> eventType) {
         listeners.remove(eventType);
+    }
+
+    public void post(BossPhaseChangedEvent event) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'post'");
+    }
+
+    public void post(BossHitEvent event) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'post'");
+    }
+
+    public void post(com.abyssaldescent.event.BossDefeatedEvent bossDefeatedEvent) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'post'");
+    }
+
+    public void unsubscribe1(Class<BossEnteredEvent> class1, Object listener) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'unsubscribe'");
+    }
+
+    public void unsubscribe(Class<BossEnteredEvent> class1, Object listener) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'unsubscribe'");
     }
 }
