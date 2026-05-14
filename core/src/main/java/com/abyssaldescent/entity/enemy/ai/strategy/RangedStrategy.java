@@ -3,8 +3,8 @@ package com.abyssaldescent.entity.enemy.ai.strategy;
 import com.abyssaldescent.entity.enemy.EnemyContext;
 
 public final class RangedStrategy implements EnemyStrategy {
-    public static final float PREFERRED_DISTANCE = 4f;
-    public static final float KITE_MARGIN = 0.8f;
+    public static final float PREFERRED_DISTANCE = 350f;  // px
+    public static final float KITE_MARGIN        = 60f;   // px
 
     @Override
     public void updateChase(EnemyContext ctx, float dt) {

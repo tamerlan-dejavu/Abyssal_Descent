@@ -1,5 +1,8 @@
 package com.abyssaldescent;
 
+import com.abyssaldescent.dungeon.DungeonManager;
+import com.abyssaldescent.dungeon.Room;
+import com.abyssaldescent.dungeon.Tier;
 import com.abyssaldescent.entity.player.CharacterType;
 import com.abyssaldescent.entity.player.Player;
 import com.abyssaldescent.entity.player.PlayerMemento;
@@ -55,8 +58,7 @@ public final class GameController {
         savedMemento = new PlayerMemento(player.getX(), player.getY(), slot.getMaxHp());
         eventBus.post(new HealthChangedEvent(slot.getCurrentHp(), slot.getMaxHp()));
         eventBus.post(new RespawnUsedEvent(respawnsRemaining, MAX_RESPAWNS));
-        int floor = state.getFloorNumber();
-        eventBus.post(new RoomChangedEvent(tierName(floor), floor, roomId(floor)));
+        postCurrentRoomEvent();
     }
 
     public void pause() {
@@ -78,9 +80,10 @@ public final class GameController {
             changePhase(GamePhase.VICTORY);
             return;
         }
-        state.setFloorNumber(current + 1);
-        int next = state.getFloorNumber();
-        eventBus.post(new RoomChangedEvent(tierName(next), next, roomId(next)));
+        int next = current + 1;
+        state.setFloorNumber(next);
+        DungeonManager.getInstance().loadTier(Tier.fromFloor(next));
+        postCurrentRoomEvent();
     }
 
     public void goToFloor(int floor) {
@@ -90,7 +93,8 @@ public final class GameController {
                     "Floor must be in [" + FIRST_FLOOR + ".." + FINAL_FLOOR + "], got " + floor);
         }
         state.setFloorNumber(floor);
-        eventBus.post(new RoomChangedEvent(tierName(floor), floor, roomId(floor)));
+        DungeonManager.getInstance().loadTier(Tier.fromFloor(floor));
+        postCurrentRoomEvent();
     }
 
     public void applyDamage(CharacterType character, int damage) {
@@ -183,16 +187,11 @@ public final class GameController {
     public int getRespawnsRemaining()       { return respawnsRemaining; }
     public int getMaxRespawns()             { return MAX_RESPAWNS; }
 
-    private static String tierName(int floor) {
-        switch (floor) {
-            case 1: return "Upper Ruins";
-            case 2: return "Sunken Crypts";
-            case 3: return "Void Core";
-            default: return "Floor " + floor;
-        }
-    }
-
-    private static String roomId(int floor) {
-        return "R-" + String.format("%02d", floor);
+    private void postCurrentRoomEvent() {
+        int floor = state.getFloorNumber();
+        Room room = DungeonManager.getInstance().getCurrentRoom();
+        String roomId   = (room != null) ? room.getId()         : "R-" + String.format("%02d", floor);
+        String tierName = (room != null) ? room.getTier().name() : Tier.fromFloor(floor).name();
+        eventBus.post(new RoomChangedEvent(tierName, floor, roomId));
     }
 }

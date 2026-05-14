@@ -8,24 +8,69 @@ import java.io.File;
 
 public final class MusicPlayer {
 
-    private Music music;
+    private Music   music;
+    private String  currentPath;
+    private float   volume = 0.5f;
 
-    public void start() {
-        FileHandle track = findFirstMp3();
-        if (track == null) {
-            Gdx.app.log("MusicPlayer", "No .mp3 file found in assets folder.");
+    /** Play a specific asset-relative path (e.g. "music/upper_ruins/battle_arena.mp3").
+     *  Falls back to the first .mp3 found in assets/ if the path does not exist. */
+    public void playTrack(String path) {
+        if (path != null && path.equals(currentPath)) return;
+
+        stopCurrent();
+
+        FileHandle handle = resolveTrack(path);
+        if (handle == null) {
+            Gdx.app.log("MusicPlayer", "No track found for: " + path);
             return;
         }
 
         try {
-            Gdx.app.log("MusicPlayer", "Playing: " + track.path());
-            music = Gdx.audio.newMusic(track);
+            music       = Gdx.audio.newMusic(handle);
+            currentPath = path;
             music.setLooping(true);
-            music.setVolume(0.5f);
+            music.setVolume(volume);
             music.play();
+            Gdx.app.log("MusicPlayer", "Playing: " + handle.path());
         } catch (RuntimeException e) {
-            Gdx.app.error("MusicPlayer", "Failed to play: " + track.path(), e);
+            Gdx.app.error("MusicPlayer", "Failed to play: " + handle.path(), e);
+            music       = null;
+            currentPath = null;
         }
+    }
+
+    /** Convenience: start with the first .mp3 found (legacy behaviour). */
+    public void start() {
+        playTrack(null);
+    }
+
+    public void setVolume(float v) {
+        volume = v;
+        if (music != null) music.setVolume(v);
+    }
+
+    public void dispose() {
+        stopCurrent();
+    }
+
+    // ── internals ─────────────────────────────────────────────────────────────
+
+    private void stopCurrent() {
+        if (music != null) {
+            music.stop();
+            music.dispose();
+            music       = null;
+            currentPath = null;
+        }
+    }
+
+    private FileHandle resolveTrack(String path) {
+        if (path != null) {
+            FileHandle h = Gdx.files.internal(path);
+            if (h.exists()) return h;
+            Gdx.app.log("MusicPlayer", "Track not found at: " + path + " — falling back");
+        }
+        return findFirstMp3();
     }
 
     private FileHandle findFirstMp3() {
@@ -56,13 +101,5 @@ public final class MusicPlayer {
             }
         }
         return null;
-    }
-
-    public void dispose() {
-        if (music != null) {
-            music.stop();
-            music.dispose();
-            music = null;
-        }
     }
 }

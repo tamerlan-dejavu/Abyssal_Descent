@@ -14,11 +14,18 @@ public final class EnemySpriteRegistry {
 
     public EnemySpriteRegistry() {
         for (EnemyType type : EnemyType.values()) {
-            String path = "enemy_" + type.name().toLowerCase(Locale.ROOT) + ".png";
+            String path = "enemies/" + type.name().toLowerCase(Locale.ROOT) + ".png";
             if (Gdx.files.internal(path).exists()) {
-                Texture t = new Texture(path);
-                t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
-                textures.put(type, t);
+                try {
+                    Texture t = new Texture(path);
+                    t.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+                    textures.put(type, t);
+                    Gdx.app.log("EnemySpriteRegistry", "Loaded: " + path);
+                } catch (Exception e) {
+                    Gdx.app.error("EnemySpriteRegistry", "Failed to load: " + path, e);
+                }
+            } else {
+                Gdx.app.log("EnemySpriteRegistry", "Not found: " + path);
             }
         }
     }

@@ -3,7 +3,7 @@ package com.abyssaldescent.entity.enemy;
 import com.badlogic.gdx.math.Vector2;
 
 public final class EnemyContext {
-    public static final float AGGRO_RADIUS = 7f;
+    public static final float AGGRO_RADIUS = 700f;  // px — visible range in pixel world
     public static final float FLEE_HP_PERCENT = 0.2f;
     public static final float ATTACK_COOLDOWN = 1.0f;
     public static final float ATTACK_WINDUP = 0.3f;

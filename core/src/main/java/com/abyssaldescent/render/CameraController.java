@@ -10,13 +10,11 @@ public final class CameraController {
     private final OrthographicCamera camera;
     private final Vector2 target = new Vector2();
     private float lerpFactor = DEFAULT_LERP_FACTOR;
-    private final float baseViewportHeight;
     private float worldWidth;
     private float worldHeight;
     private boolean hasBounds;
 
     public CameraController(float viewportWidth, float viewportHeight) {
-        this.baseViewportHeight = viewportHeight;
         camera = new OrthographicCamera();
         camera.setToOrtho(false, viewportWidth, viewportHeight);
     }
@@ -98,10 +96,9 @@ public final class CameraController {
     }
 
     public void resize(int screenWidth, int screenHeight) {
-        if (screenHeight == 0) return;
-        float aspectRatio = (float) screenWidth / screenHeight;
-        camera.viewportHeight = baseViewportHeight;
-        camera.viewportWidth = baseViewportHeight * aspectRatio;
+        if (screenWidth == 0 || screenHeight == 0) return;
+        camera.viewportWidth  = screenWidth;
+        camera.viewportHeight = screenHeight;
         camera.update();
     }
 

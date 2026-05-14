@@ -26,7 +26,7 @@ public final class HeavyStrategy implements EnemyStrategy {
 
     @Override
     public float getEngagementRange(EnemyContext ctx) {
-        return ctx.getType().getAttackRange() + 0.3f;
+        return ctx.getType().getAttackRange();
     }
 
     @Override

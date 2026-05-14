@@ -20,10 +20,7 @@ public final class WalkingState implements PlayerState {
         ctx.tickDashCooldown(dt);
         ctx.tickAttackCooldown(dt);
 
-        if (!ctx.isOnGround()) return FallingState.INSTANCE;
-
         if (ctx.isDashRequested() && ctx.canDash()) return DashingState.INSTANCE;
-        if (ctx.isJumpRequested()) return JumpingState.INSTANCE;
 
         if (ctx.isAttackRequested() && ctx.canAttack()) {
             return AttackingState.INSTANCE;
@@ -32,12 +29,15 @@ public final class WalkingState implements PlayerState {
             return IdleState.INSTANCE;
         }
 
-        float ix = ctx.getMoveInputX();
-        if (ix > 1f) ix = 1f;
-        else if (ix < -1f) ix = -1f;
+        float ix = Math.max(-1f, Math.min(1f, ctx.getMoveInputX()));
+        float iy = Math.max(-1f, Math.min(1f, ctx.getMoveInputY()));
 
-        ctx.setFacing(ix, 0);
-        ctx.setVelocity(ix * PlayerContext.BASE_SPEED, 0);
+        float len = (float) Math.sqrt(ix * ix + iy * iy);
+        if (len > 1f) { ix /= len; iy /= len; }
+
+        ctx.setFacing(ix, iy);
+        float speed = PlayerContext.BASE_SPEED * ctx.getEffectiveSpeedMultiplier();
+        ctx.setVelocity(ix * speed, iy * speed);
         ctx.applyMovement(dt);
 
         return this;

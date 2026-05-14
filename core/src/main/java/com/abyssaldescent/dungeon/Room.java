@@ -6,14 +6,19 @@ import java.util.List;
 
 public final class Room {
 
-    private static final int MAX_DOORS_DEFAULT  = 2;
-    private static final int MAX_DOORS_STARTING = 3;
+    private final String      id;
+    private final RoomType    type;
+    private final Tier        tier;
+    private final List<Door>  doors;
+    private boolean           cleared;
+    private boolean           visited;
 
-    private final String   id;
-    private final RoomType type;
-    private final Tier     tier;
-    private final List<Door> doors;
-    private boolean cleared;
+    // Grid position for minimap rendering (set by DungeonGenerator)
+    private int gridX;
+    private int gridY;
+
+    // Chest for key (only in battle arenas)
+    private Chest chest;
 
     public Room(String id, RoomType type, Tier tier) {
         this.id      = id;
@@ -21,24 +26,30 @@ public final class Room {
         this.tier    = tier;
         this.doors   = new ArrayList<Door>();
         this.cleared = (type == RoomType.STARTING || type == RoomType.SAVE_ROOM);
-    }
-
-    public boolean canAddDoor() {
-        int max = (type == RoomType.STARTING) ? MAX_DOORS_STARTING : MAX_DOORS_DEFAULT;
-        return doors.size() < max;
+        this.visited = (type == RoomType.STARTING || type == RoomType.SAVE_ROOM);
+        this.gridX   = 0;
+        this.gridY   = 0;
+        this.chest   = null;
     }
 
     public void addDoor(Door door) {
-        if (!canAddDoor()) {
-            throw new IllegalStateException("Room " + id + " already has max doors");
-        }
+        // No limit — dungeon generator controls topology
         doors.add(door);
     }
 
-    public String             getId()      { return id; }
-    public RoomType           getType()    { return type; }
-    public Tier               getTier()    { return tier; }
-    public List<Door>         getDoors()   { return Collections.unmodifiableList(doors); }
-    public boolean            isCleared()  { return cleared; }
-    public void               setCleared(boolean cleared) { this.cleared = cleared; }
+    public String            getId()      { return id; }
+    public RoomType          getType()    { return type; }
+    public Tier              getTier()    { return tier; }
+    public List<Door>        getDoors()   { return Collections.unmodifiableList(doors); }
+    public boolean           isCleared()  { return cleared; }
+    public void              setCleared(boolean v) { this.cleared = v; }
+    public boolean           isVisited()  { return visited; }
+    public void              setVisited(boolean v) { this.visited = v; }
+
+    public int  getGridX()             { return gridX; }
+    public int  getGridY()             { return gridY; }
+    public void setGridPos(int x, int y) { this.gridX = x; this.gridY = y; }
+
+    public Chest getChest()            { return chest; }
+    public void  setChest(Chest c)     { this.chest = c; }
 }

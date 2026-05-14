@@ -3,7 +3,7 @@ package com.abyssaldescent.combat.chips;
 import com.abyssaldescent.combat.strategy.CombatStrategy;
 
 public final class DoubleJumpChip extends ChipDecorator {
-    public static final float RANGE_BONUS = 0.5f;
+    public static final float RANGE_BONUS = 60f;  // px bonus on top of base ATTACK_RANGE
 
     public DoubleJumpChip(CombatStrategy wrapped) {
         super(wrapped);

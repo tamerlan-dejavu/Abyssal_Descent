@@ -51,7 +51,9 @@ public final class Player {
         if (combatStrategy instanceof MeleeStrategy) {
             ((MeleeStrategy) combatStrategy).update(deltaTime);
         }
+    }
 
+    public void consumeInputFlags() {
         context.consumeInputFlags();
     }
 
