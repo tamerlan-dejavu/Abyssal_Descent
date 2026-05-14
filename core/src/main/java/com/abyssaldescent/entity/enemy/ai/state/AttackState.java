@@ -3,6 +3,7 @@ package com.abyssaldescent.entity.enemy.ai.state;
 import com.abyssaldescent.entity.enemy.EnemyContext;
 import com.abyssaldescent.entity.enemy.ai.strategy.EnemyStrategy;
 import com.abyssaldescent.event.DamageEvent;
+import com.abyssaldescent.event.EnemyAttackEvent;
 import com.abyssaldescent.event.EventBus;
 
 public final class AttackState implements EnemyState {
@@ -32,6 +33,9 @@ public final class AttackState implements EnemyState {
             if (dmg > 0) {
                 EventBus.getInstance().post(
                         new DamageEvent(PLAYER_TARGET_ID, dmg, ctx.getType().name())
+                );
+                EventBus.getInstance().post(
+                        new EnemyAttackEvent(ctx.getId(), ctx.getPosition().x, ctx.getPosition().y, dmg)
                 );
             }
             ctx.setAttackCooldown(strategy.getAttackCooldown());

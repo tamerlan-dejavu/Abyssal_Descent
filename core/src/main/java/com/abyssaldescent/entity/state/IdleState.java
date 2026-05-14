@@ -21,9 +21,7 @@ public final class IdleState implements PlayerState {
         ctx.tickDashCooldown(dt);
         ctx.tickAttackCooldown(dt);
 
-        if (!ctx.isOnGround()) return FallingState.INSTANCE;
-
-        if (ctx.isJumpRequested()) return JumpingState.INSTANCE;
+        if (ctx.isDashRequested() && ctx.canDash()) return DashingState.INSTANCE;
 
         if (ctx.isAttackRequested() && ctx.canAttack()) {
             return AttackingState.INSTANCE;

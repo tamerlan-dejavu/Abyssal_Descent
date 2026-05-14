@@ -20,6 +20,7 @@ public final class CombatManager {
     private final EventListener<PlayerAttackEvent> attackListener = this::onPlayerAttack;
     private CombatStrategy playerStrategy;
     private int playerBaseDamage = CharacterType.KARIN.getBaseDamage();
+    private DamageCallback damageCallback;
 
     public CombatManager(EventBus eventBus, CombatStrategy playerStrategy) {
         this.eventBus = eventBus;
@@ -27,11 +28,17 @@ public final class CombatManager {
         this.eventBus.subscribe(PlayerAttackEvent.class, attackListener);
     }
 
+    public void setDamageCallback(DamageCallback callback) {
+        this.damageCallback = callback;
+    }
+
     public void setPlayerStrategy(CombatStrategy strategy) { this.playerStrategy = strategy; }
 
     public void setPlayerBaseDamage(int baseDamage) { this.playerBaseDamage = baseDamage; }
 
     public void addEnemy(Enemy enemy) { enemies.add(enemy); }
+
+    public void clearEnemies() { enemies.clear(); }
 
     public List<Enemy> getEnemies() { return enemies; }
 
@@ -79,6 +86,9 @@ public final class CombatManager {
     private void applyDamage(Enemy enemy) {
         int dmg = playerStrategy.calculateDamage(playerBaseDamage);
         enemy.takeDamage(dmg);
+        if (damageCallback != null) {
+            damageCallback.onDamage(enemy.getX(), enemy.getY());
+        }
     }
 
     private static boolean unwrapContainsPierce(CombatStrategy strategy) {

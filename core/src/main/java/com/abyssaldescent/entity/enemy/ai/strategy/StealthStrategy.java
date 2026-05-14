@@ -3,7 +3,7 @@ package com.abyssaldescent.entity.enemy.ai.strategy;
 import com.abyssaldescent.entity.enemy.EnemyContext;
 
 public final class StealthStrategy implements EnemyStrategy {
-    public static final float AMBUSH_RANGE = 2.5f;
+    public static final float AMBUSH_RANGE = 150f;  // px
     public static final float AMBUSH_MULTIPLIER = 2.0f;
 
     @Override

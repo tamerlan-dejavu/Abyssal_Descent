@@ -1,6 +1,9 @@
 package com.abyssaldescent.ui.hud;
 
 import com.abyssaldescent.GameStateManager;
+import com.abyssaldescent.dungeon.Door;
+import com.abyssaldescent.dungeon.DungeonManager;
+import com.abyssaldescent.dungeon.Room;
 import com.abyssaldescent.event.EventBus;
 import com.abyssaldescent.event.EventListener;
 import com.abyssaldescent.event.RoomChangedEvent;
@@ -13,17 +16,22 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
+import java.util.List;
+
 public final class MinimapWindow {
 
     public static final float W = 300f;
     public static final float H = 300f;
 
-    private static final String ASSET_PATH = "ui/backgrounds/minimap.png";
+    private static final String ASSET_PATH  = "ui/backgrounds/minimap.png";
+    private static final float  CELL_SIZE   = 20f;
+    private static final float  CELL_GAP    = 4f;
+    private static final float  CELL_STEP   = CELL_SIZE + CELL_GAP;
 
     @SuppressWarnings("unused") private String tierName;
     private int    floorNumber;
-    @SuppressWarnings("unused") private String roomId;
-    private int    roomsCompleted;
+    private int    roomsVisited;
+    private String currentRoomId = "";
 
     private final Texture      bgTexture;
     private final BitmapFont   font;
@@ -38,8 +46,7 @@ public final class MinimapWindow {
         int floor        = GameStateManager.getInstance().getFloorNumber();
         this.floorNumber = floor;
         this.tierName    = tierNameFor(floor);
-        this.roomId      = "R-" + String.format("%02d", floor);
-        this.roomsCompleted = 0;
+        this.roomsVisited = 1;  // start room is already visited
         EventBus.getInstance().subscribe(TierChangedEvent.class, tierListener);
         EventBus.getInstance().subscribe(RoomChangedEvent.class, roomListener);
     }
@@ -47,15 +54,22 @@ public final class MinimapWindow {
     private void onTierChanged(TierChangedEvent e) {
         floorNumber     = e.getNewTier();
         tierName        = tierNameFor(floorNumber);
-        roomId          = "R-" + String.format("%02d", floorNumber);
-        roomsCompleted  = 0;
+        roomsVisited    = 1;  // start room is already visited
+        currentRoomId   = "";
     }
 
     private void onRoomChanged(RoomChangedEvent e) {
-        tierName    = e.getTierName();
-        floorNumber = e.getFloorNumber();
-        roomId      = e.getRoomId();
-        roomsCompleted++;
+        tierName      = e.getTierName();
+        floorNumber   = e.getFloorNumber();
+        currentRoomId = e.getRoomId();
+
+        // Only increment if this is a new room
+        DungeonManager mgr = DungeonManager.getInstance();
+        Room room = mgr.getGraph().getRoom(currentRoomId);
+        if (room != null && !room.isVisited()) {
+            room.setVisited(true);
+            roomsVisited++;
+        }
     }
 
     public void renderBackground(SpriteBatch batch, float x, float y) {
@@ -68,63 +82,94 @@ public final class MinimapWindow {
     public void renderShapes(ShapeRenderer shapes, float x, float y) {
         float[] pal = tierPalette(floorNumber);
 
+        // Background panel
         if (bgTexture == null) {
             shapes.setColor(0.04f, 0.04f, 0.1f, 0.88f);
             shapes.rect(x, y, W, H);
             float bw = 2f;
             shapes.setColor(pal[16], pal[17], pal[18], 0.4f);
-            shapes.rect(x, y, W, bw);
-            shapes.rect(x, y + H - bw, W, bw);
-            shapes.rect(x, y, bw, H);
-            shapes.rect(x + W - bw, y, bw, H);
+            shapes.rect(x, y,       W,  bw);
+            shapes.rect(x, y+H-bw,  W,  bw);
+            shapes.rect(x, y,       bw, H);
+            shapes.rect(x+W-bw, y,  bw, H);
         }
 
-        float cx   = x + W * 0.5f;
-        float cy   = y + H * 0.5f;
-        float base = Math.min(W, H) * 0.38f * 0.7f;
+        DungeonManager mgr = DungeonManager.getInstance();
+        if (mgr.getGraph() == null) return;
 
-        float gridX = cx - base - 7f;
-        float gridY = cy - base + 25f;
-        float gridW = base * 2f + 14f;
-        float gridH = base * 2f - 15f;
+        List<Room> allRooms = mgr.getGraph().getAllRooms();
 
-        float cellW = gridW / 3f;
-        float cellH = gridH / 3f;
+        // Center of minimap panel
+        float cx = x + W * 0.5f;
+        float cy = y + H * 0.5f;
 
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 3; col++) {
-                boolean isActive  = (row == 1 && col == 1);
-                boolean isVisited = !isActive && ((row == 0 && col == 1) || (row == 1 && col == 0));
-                if (!isActive && !isVisited) continue;
+        // Find current room grid pos to center map on it
+        int originGX = 0, originGY = 0;
+        Room current = mgr.getGraph().getRoom(currentRoomId);
+        if (current != null) {
+            originGX = current.getGridX();
+            originGY = current.getGridY();
+        }
 
-                float cellX = gridX + col * cellW;
-                float cellY = gridY + row * cellH;
+        // Draw connection lines first (under room cells)
+        for (Room room : allRooms) {
+            boolean isCurrent = room.getId().equals(currentRoomId);
+            boolean isVisible = isCurrent || room.isVisited();
+            if (!isVisible) continue;
 
-                int base4 = isActive ? 4 : 8;
-                shapes.setColor(pal[base4], pal[base4 + 1], pal[base4 + 2], pal[base4 + 3]);
-                shapes.rect(cellX + 1f, cellY + 1f, cellW - 2f, cellH - 2f);
+            float rx = cx + (room.getGridX() - originGX) * CELL_STEP;
+            float ry = cy + (room.getGridY() - originGY) * CELL_STEP;
 
-                float ba = isActive ? 0.55f : 0.35f;
-                shapes.setColor(pal[16], pal[17], pal[18], ba);
-                shapes.line(cellX + 1f,          cellY + 1f,          cellX + cellW - 1f, cellY + 1f);
-                shapes.line(cellX + 1f,          cellY + cellH - 1f,  cellX + cellW - 1f, cellY + cellH - 1f);
-                shapes.line(cellX + 1f,          cellY + 1f,          cellX + 1f,         cellY + cellH - 1f);
-                shapes.line(cellX + cellW - 1f,  cellY + 1f,          cellX + cellW - 1f, cellY + cellH - 1f);
+            for (Door door : room.getDoors()) {
+                Room target = mgr.getGraph().getRoom(door.getToRoomId());
+                if (target == null) continue;
+
+                boolean targetCurrent = target.getId().equals(currentRoomId);
+                boolean targetVisible = targetCurrent || target.isVisited();
+                if (!targetVisible) continue;
+
+                float tx = cx + (target.getGridX() - originGX) * CELL_STEP;
+                float ty = cy + (target.getGridY() - originGY) * CELL_STEP;
+                shapes.setColor(pal[16], pal[17], pal[18], 0.4f);
+                shapes.line(rx, ry, tx, ty);
             }
         }
 
-        float dotSize = 6f;
-        float dotX = gridX + cellW * 1.5f;
-        float dotY = gridY + cellH * 1.5f;
-        shapes.setColor(1f, 1f, 1f, 0.95f);
-        shapes.rect(dotX - dotSize * 0.5f, dotY - dotSize * 0.5f, dotSize, dotSize);
+        // Draw room cells
+        for (Room room : allRooms) {
+            boolean isCurrent = room.getId().equals(currentRoomId);
+            boolean isVisible = isCurrent || room.isVisited();
+            if (!isVisible) continue;
+
+            float rx = cx + (room.getGridX() - originGX) * CELL_STEP;
+            float ry = cy + (room.getGridY() - originGY) * CELL_STEP;
+
+            // Clip rooms outside panel
+            if (rx < x + 4f || rx > x + W - 4f || ry < y + 4f || ry > y + H - 4f) continue;
+
+            float half = CELL_SIZE * 0.5f;
+            if (isCurrent) {
+                shapes.setColor(1f, 1f, 0.2f, 1f);
+                shapes.rect(rx - half - 2f, ry - half - 2f, CELL_SIZE + 4f, CELL_SIZE + 4f);
+                shapes.setColor(pal[4], pal[5], pal[6], 1f);
+            } else {
+                shapes.setColor(pal[8], pal[9], pal[10], 0.8f);
+            }
+            shapes.rect(rx - half, ry - half, CELL_SIZE, CELL_SIZE);
+
+            // Door icon for FINAL room
+            if (room.getType() == com.abyssaldescent.dungeon.RoomType.FINAL) {
+                shapes.setColor(1f, 0.4f, 0.1f, 0.9f);
+                shapes.rect(rx - half + 3f, ry - half + 3f, CELL_SIZE - 6f, CELL_SIZE - 6f);
+            }
+        }
     }
 
     public void renderText(SpriteBatch batch, float x, float y) {
         if (font == null) return;
         font.getData().setScale(1.3f);
         font.setColor(0.55f, 0.55f, 0.55f, 1f);
-        String label = String.valueOf(roomsCompleted);
+        String label = String.valueOf(roomsVisited);
         glLayout.setText(font, label);
         font.draw(batch, label, x + W - 104f - glLayout.width, y + H - 245f);
     }
@@ -134,6 +179,8 @@ public final class MinimapWindow {
         EventBus.getInstance().unsubscribe(RoomChangedEvent.class, roomListener);
         if (bgTexture != null) bgTexture.dispose();
     }
+
+    // ── helpers ───────────────────────────────────────────────────────────────
 
     private static float[] tierPalette(int floor) {
         switch (floor) {
@@ -175,8 +222,8 @@ public final class MinimapWindow {
     private static String tierNameFor(int floor) {
         switch (floor) {
             case 1: return "Upper Ruins";
-            case 2: return "Sunken Crypts";
-            case 3: return "Void Core";
+            case 2: return "Flooded Catacombs";
+            case 3: return "Maltarion's Abyss";
             default: return "Floor " + floor;
         }
     }

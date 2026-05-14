@@ -4,17 +4,14 @@ import com.badlogic.gdx.math.Vector2;
 
 
 public final class PlayerContext {
-    public static final float BASE_SPEED    = 5f;
-    public static final float DASH_DISTANCE = 3f;
-    public static final float DASH_DURATION = 0.2f;
-    public static final float DASH_I_FRAMES = 0.2f;
-    public static final float DASH_COOLDOWN = 1.0f;   // GDD: откат 1 с
+    public static final float BASE_SPEED      = 600f;   // pixels/sec
+    public static final float DASH_DISTANCE  = 500f;   // pixels
+    public static final float DASH_DURATION  = 0.2f;
+    public static final float DASH_I_FRAMES  = 0.2f;
+    public static final float DASH_COOLDOWN  = 1.0f;
     public static final float ATTACK_DURATION = 0.3f;
     public static final float ATTACK_COOLDOWN = 0.15f;
-    public static final float ATTACK_RANGE  = 1.5f;
-    public static final float JUMP_VELOCITY = 12f;
-    public static final float GRAVITY       = -25f;
-    public static final float GROUND_Y      = 0.5f;   // half-sprite above world floor
+    public static final float ATTACK_RANGE   = 150f;   // pixels
 
     private final Vector2 position = new Vector2();
     private final Vector2 velocity = new Vector2();
@@ -24,14 +21,13 @@ public final class PlayerContext {
     private float moveInputY;
     private boolean attackRequested;
     private boolean dashRequested;
-    private boolean jumpRequested;
     private boolean interactRequested;
+    private boolean blockActive;
 
     private float stateTimer;
     private float dashCooldownTimer;
     private float attackCooldownTimer;
     private boolean invincible;
-    private boolean onGround = true;
 
     private float slowMultiplier         = 1.0f;
     private float slowTimer              = 0f;
@@ -53,7 +49,7 @@ public final class PlayerContext {
 
     public float getMoveInputX() { return moveInputX; }
     public float getMoveInputY() { return moveInputY; }
-    public boolean hasMoveInput() { return moveInputX != 0; }
+    public boolean hasMoveInput() { return moveInputX != 0 || moveInputY != 0; }
 
     public void setMoveInput(float x, float y) {
         this.moveInputX = x;
@@ -64,10 +60,10 @@ public final class PlayerContext {
     public void setAttackRequested(boolean v)  { this.attackRequested = v; }
     public boolean isDashRequested()    { return dashRequested; }
     public void setDashRequested(boolean v)    { this.dashRequested = v; }
-    public boolean isJumpRequested()    { return jumpRequested; }
-    public void setJumpRequested(boolean v)    { this.jumpRequested = v; }
     public boolean isInteractRequested(){ return interactRequested; }
     public void setInteractRequested(boolean v){ this.interactRequested = v; }
+    public boolean isBlockActive()     { return blockActive; }
+    public void setBlockActive(boolean v)     { this.blockActive = v; }
     public float getStateTimer()  { return stateTimer; }
     public void  setStateTimer(float t) { this.stateTimer = t; }
     public void  tickStateTimer(float dt) { this.stateTimer += dt; }
@@ -85,16 +81,6 @@ public final class PlayerContext {
     public boolean canAttack() { return attackCooldownTimer <= 0; }
     public boolean isInvincible()  { return invincible; }
     public void setInvincible(boolean v) { this.invincible = v; }
-    public boolean isOnGround()    { return onGround; }
-    public void setOnGround(boolean v) { this.onGround = v; }
-    public void applyGravity(float dt) {
-        if (!onGround) velocity.y += GRAVITY * dt;
-    }
-    public void landOnGround() {
-        position.y = GROUND_Y;
-        velocity.y = 0;
-        onGround   = true;
-    }
 
     public void applyMovement(float dt) {
         position.mulAdd(velocity, dt);
@@ -103,7 +89,6 @@ public final class PlayerContext {
     public void consumeInputFlags() {
         attackRequested   = false;
         dashRequested     = false;
-        jumpRequested     = false;
         interactRequested = false;
     }
 

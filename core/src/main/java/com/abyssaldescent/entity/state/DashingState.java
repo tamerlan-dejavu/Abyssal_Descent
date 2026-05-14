@@ -17,13 +17,14 @@ public final class DashingState implements PlayerState {
 
         float speed = PlayerContext.DASH_DISTANCE / PlayerContext.DASH_DURATION;
         float fx = ctx.getFacing().x;
-        if (fx == 0) fx = 1;  // default right if no horizontal facing
-        ctx.setVelocity(fx * speed, 0);  // horizontal-only dash
+        float fy = ctx.getFacing().y;
+        if (fx == 0 && fy == 0) fx = 1;
+        ctx.setVelocity(fx * speed, fy * speed);
 
         EventBus.getInstance().post(new PlayerDashEvent(
                 ctx.getPosition().x,
                 ctx.getPosition().y,
-                fx, 0
+                fx, fy
         ));
     }
 
